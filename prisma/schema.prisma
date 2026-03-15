@@ -1,0 +1,122 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Text
+  firstName   String   @map("firstName")
+  middleName  String?  @map("middleName")
+  lastName    String   @map("lastName")
+  phoneNumber String   @unique @map("phoneNumber")
+  email       String   @unique
+  password    String
+  hasAcceptedTerms     Boolean @default(false) @map("hasAcceptedTerms")
+  hasAcceptedHostTerms Boolean @default(false) @map("hasAcceptedHostTerms")
+  createdAt   DateTime @default(now()) @map("createdAt") @db.Timestamp
+  updatedAt   DateTime @default(now()) @updatedAt @map("updatedAt") @db.Timestamp
+
+  properties Property[]
+  reviews    Review[]
+
+  @@map("user")
+}
+
+model Location {
+  id                  String   @id @default(dbgenerated("gen_random_uuid()")) @db.Text
+  county_code         Int      @map("county_code")
+  county_name         String   @map("county_name")
+  constituency_name   String   @map("constituency_name")
+  constituencies_wards String   @map("constituencies_wards")
+  created_at          DateTime @default(now()) @db.Timestamp
+  updated_at          DateTime @default(now()) @db.Timestamp
+
+  // Relations for Property foreign keys
+  counties_property      Property[] @relation("county_properties")
+  constituencies_property Property[] @relation("constituency_properties")
+  subcounties_property   Property[] @relation("subcounty_properties")
+  wards_property         Property[] @relation("ward_properties")
+
+  @@index([county_name], name: "county_index")
+  @@index([constituency_name], name: "constituency_index")
+  @@index([constituencies_wards], name: "ward_index")
+  @@index([county_code, constituency_name, constituencies_wards], name: "location_ind")
+  @@map("location")
+}
+
+model Property {
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Text
+  propertyName   String   @map("propertyName")
+  description    String
+  rooms          Int
+  price          Float
+  guests         Int
+  photos         String[] @db.Text
+  amenities      Json
+  countyId       String   @map("countyId")
+  subCountyId    String   @map("subCountyId")
+  constituencyId String   @map("constituencyId")
+  wardId         String   @map("wardId")
+  userId         String   @map("userId")
+  createdAt      DateTime @default(now()) @map("createdAt") @db.Timestamp
+  updatedAt      DateTime @default(now()) @updatedAt @map("updatedAt") @db.Timestamp
+
+  // Relations
+  county      Location @relation("county_properties", fields: [countyId], references: [id])
+  subCounty   Location @relation("subcounty_properties", fields: [subCountyId], references: [id])
+  constituency Location @relation("constituency_properties", fields: [constituencyId], references: [id])
+  ward        Location @relation("ward_properties", fields: [wardId], references: [id])
+  user        User     @relation(fields: [userId], references: [id])
+  reviews     Review[]
+
+  @@index([countyId], name: "Property_countyId_idx")
+  @@index([subCountyId], name: "Property_subCountyId_idx")
+  @@index([constituencyId], name: "Property_constituencyId_idx")
+  @@index([wardId], name: "Property_wardId_idx")
+  @@map("Property")
+}
+
+model Review {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Text
+  stars       Int
+  comment     String
+  reviewDate  DateTime @default(now()) @map("reviewDate") @db.Timestamp
+  propertyId  String   @map("propertyId")
+  userId      String   @map("userId")
+  updatedAt   DateTime @default(now()) @updatedAt @map("updatedAt") @db.Timestamp
+
+  // Relations
+  property Property @relation(fields: [propertyId], references: [id])
+  user     User     @relation(fields: [userId], references: [id])
+
+  @@unique([userId, propertyId], name: "Review_userId_propertyId_key")
+  @@map("Review")
+}
+
+model tourism_destination {
+  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  destinationName String   @map("destinationName")
+  tourism         String
+  description     String?
+  county          String
+  subcounty       String
+  constituency    String
+  ward            String
+  text            String?
+  image           String?
+  created_at      DateTime @default(now()) @db.Timestamp
+  updated_at      DateTime @default(now()) @db.Timestamp
+
+  @@index([county], name: "tourism_destination_county_idx")
+  @@index([destinationName], name: "tourism_destination_destinationName_idx")
+  @@index([destinationName, county], name: "tourism_destination_subCounty_idx")
+  @@map("tourism_destination")
+}
