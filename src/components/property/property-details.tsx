@@ -2,6 +2,7 @@ import { Star } from "lucide-react"
 
 interface PropertyDetailsProps {
   name: string
+  hostUsername?: string
   guests: number
   bedrooms: number
   bathrooms: number
@@ -11,6 +12,7 @@ interface PropertyDetailsProps {
 
 export function PropertyDetails({
   name,
+  hostUsername,
   guests,
   bedrooms,
   bathrooms,
@@ -20,6 +22,9 @@ export function PropertyDetails({
   return (
     <div className="py-6 border-b border-border">
       <h1 className="text-2xl sm:text-3xl font-semibold text-foreground">{name}</h1>
+      {hostUsername ? (
+        <p className="mt-2 text-sm text-muted-foreground">Hosted by @{hostUsername}</p>
+      ) : null}
       <div className="mt-2 flex flex-wrap items-center gap-2 text-muted-foreground">
         <span>{guests} guests</span>
         <span className="text-border">|</span>

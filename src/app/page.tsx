@@ -1,60 +1,82 @@
 import { LocationsList } from "@/components/locations-list"
 import { getPrisma } from "@/lib/prisma"
 
-// Generate mock properties for each location
-function generateProperties(location: string) {
-  const propertyNames = [
-    `Cozy Studio in ${location}`,
-    `Luxury Apartment in ${location}`,
-    `Modern Villa in ${location}`,
-    `Penthouse Suite in ${location}`,
-    `Garden Cottage in ${location}`,
-    `Executive Suite in ${location}`,
-    `Family Home in ${location}`,
-    `City Loft in ${location}`,
-  ]
-
-  return propertyNames.map((name, index) => ({
-    id: `${location.toLowerCase().replace(/\s/g, "-")}-${index}`,
-    image: "/images/property.jpg",
-    name,
-    pricePerNight: Math.floor(Math.random() * 300) + 50,
-    rating: Number((Math.random() * 0.5 + 4.5).toFixed(2)),
-  }))
+interface PropertyCardData {
+  id: string
+  image: string
+  name: string
+  pricePerNight: number
+  rating: number
 }
 
-async function getLocationNames(): Promise<string[]> {
+interface LocationSectionData {
+  location: string
+  properties: PropertyCardData[]
+}
+
+async function getLocationData(): Promise<LocationSectionData[]> {
   const prisma = getPrisma()
   if (!prisma) return []
   try {
-    const rows = await prisma.location.findMany({
-      select: { county_name: true },
-      distinct: ["county_name"],
-      orderBy: { county_name: "asc" },
+    const properties = await prisma.property.findMany({
+      select: {
+        id: true,
+        propertyName: true,
+        price: true,
+        photos: true,
+        countyName: true,
+        reviews: { select: { stars: true } },
+      },
+      orderBy: { createdAt: "desc" },
     })
-    return rows
-      .map((row) => row.county_name.trim())
-      .filter(Boolean)
+
+    const grouped = new Map<string, PropertyCardData[]>()
+    for (const property of properties) {
+      const location = (property.countyName ?? "").trim()
+      if (!location) continue
+
+      const reviewCount = property.reviews.length
+      const rating =
+        reviewCount > 0
+          ? Number(
+              (
+                property.reviews.reduce((sum, review) => sum + review.stars, 0) /
+                reviewCount
+              ).toFixed(2)
+            )
+          : 0
+
+      const card: PropertyCardData = {
+        id: property.id,
+        name: property.propertyName,
+        image: property.photos?.[0] || "/images/property.jpg",
+        pricePerNight: Number(property.price) || 0,
+        rating,
+      }
+
+      if (!grouped.has(location)) {
+        grouped.set(location, [])
+      }
+      grouped.get(location)?.push(card)
+    }
+
+    return Array.from(grouped.entries())
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([location, props]) => ({ location, properties: props }))
   } catch (error) {
     return []
   }
 }
 
 export default async function Home() {
-  const locationNames = await getLocationNames()
-
-  // Pre-generate all location data
-  const allLocations = locationNames.map((location) => ({
-    location,
-    properties: generateProperties(location),
-  }))
+  const allLocations = await getLocationData()
 
   return (
     <main className="min-h-screen bg-background">
       <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 sm:py-8 lg:max-w-[95vw] lg:px-4">
         <h1 className="mb-2 text-2xl sm:text-3xl font-bold text-foreground">Discover Airbnbs in Kenya</h1>
         <p className="mb-4 sm:mb-6 text-sm sm:text-base text-muted-foreground">
-          Explore unique stays across {locationNames.length} locations
+          Explore unique stays across {allLocations.length} locations
         </p>
 
         {/* Lazy-loaded sections container */}

@@ -31,6 +31,7 @@ export default function SignupPage() {
     }
 
     const payload = {
+      username: String(formData.get("username") || "").trim(),
       firstName: String(formData.get("firstName") || "").trim(),
       middleName: String(formData.get("middleName") || "").trim(),
       lastName: String(formData.get("lastName") || "").trim(),
@@ -42,7 +43,7 @@ export default function SignupPage() {
       hasAcceptedHostTerms: false,
     }
 
-    if (!payload.firstName || !payload.lastName || !payload.email || !payload.phoneNumber) {
+    if (!payload.username || !payload.firstName || !payload.lastName || !payload.email || !payload.phoneNumber) {
       setError("Please fill in all required fields.")
       setIsSubmitting(false)
       return
@@ -86,6 +87,14 @@ export default function SignupPage() {
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4 rounded-xl border border-border bg-background p-6 shadow-sm">
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-foreground" htmlFor="username">
+              Username
+            </label>
+            <Input id="username" name="username" type="text" required placeholder="yourname" />
+            <p className="text-xs text-muted-foreground">Usernames cannot be changed later.</p>
+          </div>
+
           <div className="space-y-2">
             <label className="text-sm font-medium text-foreground" htmlFor="firstName">
               First name

@@ -10,26 +10,26 @@ import {
   Waves,
   UtensilsCrossed,
   WashingMachine,
-  Dumbbell,
+  Plug,
+  Bug,
+  ShieldAlert,
+  Siren,
   Flame,
-  ShieldCheck,
-  Coffee,
-  Bath,
 } from "lucide-react"
 
 const allAmenities = [
-  { icon: Wifi, label: "Free WiFi" },
-  { icon: Car, label: "Free Parking" },
-  { icon: Tv, label: "Smart TV" },
-  { icon: Wind, label: "Air Conditioning" },
-  { icon: Waves, label: "Swimming Pool" },
-  { icon: UtensilsCrossed, label: "Fully Equipped Kitchen" },
-  { icon: WashingMachine, label: "Washing Machine" },
-  { icon: Dumbbell, label: "Gym Access" },
-  { icon: Flame, label: "BBQ Grill" },
-  { icon: ShieldCheck, label: "24/7 Security" },
-  { icon: Coffee, label: "Coffee Maker" },
-  { icon: Bath, label: "Bathtub" },
+  { key: "pool", icon: Waves, label: "Pool", available: true },
+  { key: "wifi", icon: Wifi, label: "WiFi", available: true },
+  { key: "parking", icon: Car, label: "Free parking", available: true },
+  { key: "climate", icon: Wind, label: "Air conditioning or heating", available: true },
+  { key: "kitchen", icon: UtensilsCrossed, label: "Kitchen", available: true },
+  { key: "hot-tub", icon: Flame, label: "Hot tub", available: true },
+  { key: "washer-dryer", icon: WashingMachine, label: "Washer or dryer", available: true },
+  { key: "tv", icon: Tv, label: "TV or cable", available: true },
+  { key: "generator", icon: Plug, label: "Backup generator", available: true },
+  { key: "nets", icon: Bug, label: "Mosquito nets", available: true },
+  { key: "smoke", icon: ShieldAlert, label: "Smoke detector", available: true },
+  { key: "fire", icon: Siren, label: "Fire alarm", available: true },
 ]
 
 interface AmenitiesProps {
@@ -37,8 +37,21 @@ interface AmenitiesProps {
 }
 
 export function Amenities({ amenities = allAmenities }: AmenitiesProps) {
+  const iconMap = allAmenities.reduce<Record<string, (typeof allAmenities)[number]["icon"]>>(
+    (acc, item) => {
+      acc[item.key] = item.icon
+      return acc
+    },
+    {}
+  )
+
+  const normalizedAmenities = amenities.map((amenity) => ({
+    ...amenity,
+    icon: amenity.icon ?? iconMap[amenity.key],
+  }))
+
   const [showAll, setShowAll] = useState(false)
-  const displayedAmenities = showAll ? amenities : amenities.slice(0, 6)
+  const displayedAmenities = showAll ? normalizedAmenities : normalizedAmenities.slice(0, 6)
 
   return (
     <div className="py-6 border-b border-border">
@@ -46,8 +59,20 @@ export function Amenities({ amenities = allAmenities }: AmenitiesProps) {
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {displayedAmenities.map((amenity, index) => (
           <div key={index} className="flex items-center gap-3">
-            <amenity.icon className="h-5 w-5 text-muted-foreground" />
-            <span className="text-foreground">{amenity.label}</span>
+            {amenity.icon ? (
+              <amenity.icon
+                className={`h-5 w-5 ${amenity.available ? "text-muted-foreground" : "text-muted-foreground/50"}`}
+              />
+            ) : null}
+            <span
+              className={
+                amenity.available
+                  ? "text-foreground"
+                  : "text-muted-foreground line-through"
+              }
+            >
+              {amenity.label}
+            </span>
           </div>
         ))}
       </div>

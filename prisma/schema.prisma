@@ -1,8 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Get a free hosted Postgres database in seconds: `npx create-db`
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -12,93 +7,253 @@ datasource db {
 }
 
 model User {
-  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Text
-  firstName   String   @map("firstName")
-  middleName  String?  @map("middleName")
-  lastName    String   @map("lastName")
-  phoneNumber String   @unique @map("phoneNumber")
-  email       String   @unique
-  password    String
-  hasAcceptedTerms     Boolean @default(false) @map("hasAcceptedTerms")
-  hasAcceptedHostTerms Boolean @default(false) @map("hasAcceptedHostTerms")
-  createdAt   DateTime @default(now()) @map("createdAt") @db.Timestamp
-  updatedAt   DateTime @default(now()) @updatedAt @map("updatedAt") @db.Timestamp
-
-  properties Property[]
-  reviews    Review[]
+  id                   String              @id @default(dbgenerated("gen_random_uuid()"))
+  firstName            String              @map("firstName")
+  middleName           String?             @map("middleName")
+  lastName             String              @map("lastName")
+  phoneNumber          String              @unique @map("phoneNumber")
+  email                String              @unique
+  password             String
+  createdAt            DateTime            @default(now()) @map("createdAt") @db.Timestamp(6)
+  updatedAt            DateTime            @default(now()) @updatedAt @map("updatedAt") @db.Timestamp(6)
+  hasAcceptedHostTerms Boolean             @default(false) @map("hasAcceptedHostTerms")
+  hasAcceptedTerms     Boolean             @default(false) @map("hasAcceptedTerms")
+  username             String?             @unique
+  walletBalance        Float               @default(0)
+  bookings             Booking[]
+  properties           Property[]
+  reviews              Review[]
+  receivedTransactions Transaction[]       @relation("ReceiverUser")
+  sentTransactions     Transaction[]       @relation("SenderUser")
+  hostWallets          HostWalletTransaction[]
+  hostWalletActor      HostWalletTransaction[] @relation("HostWalletActor")
+  cancellationRequests CancellationRequest[]
+  paymentMethods       UserPaymentMethod[]
 
   @@map("user")
 }
 
 model Location {
-  id                  String   @id @default(dbgenerated("gen_random_uuid()")) @db.Text
-  county_code         Int      @map("county_code")
-  county_name         String   @map("county_name")
-  constituency_name   String   @map("constituency_name")
-  constituencies_wards String   @map("constituencies_wards")
-  created_at          DateTime @default(now()) @db.Timestamp
-  updated_at          DateTime @default(now()) @db.Timestamp
-
-  // Relations for Property foreign keys
-  counties_property      Property[] @relation("county_properties")
+  id                      String     @id @default(dbgenerated("gen_random_uuid()")) @db.Text
+  county_code             Int        @map("county_code")
+  county_name             String     @map("county_name")
+  constituency_name       String     @map("constituency_name")
+  constituencies_wards    String     @map("constituencies_wards")
+  created_at              DateTime   @default(now()) @db.Timestamp(6)
+  updated_at              DateTime   @default(now()) @db.Timestamp(6)
   constituencies_property Property[] @relation("constituency_properties")
-  subcounties_property   Property[] @relation("subcounty_properties")
-  wards_property         Property[] @relation("ward_properties")
+  counties_property       Property[] @relation("county_properties")
+  subcounties_property    Property[] @relation("subcounty_properties")
+  wards_property          Property[] @relation("ward_properties")
 
-  @@index([county_name], name: "county_index")
-  @@index([constituency_name], name: "constituency_index")
-  @@index([constituencies_wards], name: "ward_index")
-  @@index([county_code, constituency_name, constituencies_wards], name: "location_ind")
-  @@map("location")
+  @@index([county_name], map: "county_index")
+  @@index([constituency_name], map: "constituency_index")
+  @@index([constituencies_wards], map: "ward_index")
+  @@index([county_code, constituency_name, constituencies_wards], map: "location_ind")
+  @@map("locations")
 }
 
 model Property {
-  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Text
-  propertyName   String   @map("propertyName")
-  description    String
-  rooms          Int
-  price          Float
-  guests         Int
-  photos         String[] @db.Text
-  amenities      Json
-  countyId       String   @map("countyId")
-  subCountyId    String   @map("subCountyId")
-  constituencyId String   @map("constituencyId")
-  wardId         String   @map("wardId")
-  userId         String   @map("userId")
-  createdAt      DateTime @default(now()) @map("createdAt") @db.Timestamp
-  updatedAt      DateTime @default(now()) @updatedAt @map("updatedAt") @db.Timestamp
+  id               String    @id @default(dbgenerated("gen_random_uuid()"))
+  propertyName     String    @map("propertyName")
+  description      String
+  rooms            Int
+  bathrooms        Int      @default(1)
+  price            Float
+  guests           Int
+  photos           String[]
+  amenities        Json
+  countyId         String    @map("countyId")
+  subCountyId      String    @map("subCountyId")
+  constituencyId   String    @map("constituencyId")
+  wardId           String    @map("wardId")
+  userId           String    @map("userId")
+  createdAt        DateTime  @default(now()) @map("createdAt")
+  updatedAt        DateTime  @default(now()) @updatedAt @map("updatedAt")
+  constituencyName String?   @map("constituencyName")
+  countyName       String?   @map("countyName")
+  minNights        Int       @default(1) @map("minNights")
+  wardName         String?   @map("wardName")
+  bookings         Booking[]
+  constituency     Location  @relation("constituency_properties", fields: [constituencyId], references: [id])
+  county           Location  @relation("county_properties", fields: [countyId], references: [id])
+  subCounty        Location  @relation("subcounty_properties", fields: [subCountyId], references: [id])
+  user             User      @relation(fields: [userId], references: [id])
+  ward             Location  @relation("ward_properties", fields: [wardId], references: [id])
+  reviews          Review[]
+  cancellationSuggestions CancellationRequest[] @relation("CancellationSuggestion")
 
-  // Relations
-  county      Location @relation("county_properties", fields: [countyId], references: [id])
-  subCounty   Location @relation("subcounty_properties", fields: [subCountyId], references: [id])
-  constituency Location @relation("constituency_properties", fields: [constituencyId], references: [id])
-  ward        Location @relation("ward_properties", fields: [wardId], references: [id])
-  user        User     @relation(fields: [userId], references: [id])
-  reviews     Review[]
-
-  @@index([countyId], name: "Property_countyId_idx")
-  @@index([subCountyId], name: "Property_subCountyId_idx")
-  @@index([constituencyId], name: "Property_constituencyId_idx")
-  @@index([wardId], name: "Property_wardId_idx")
+  @@index([countyId])
+  @@index([subCountyId])
+  @@index([constituencyId])
+  @@index([wardId])
   @@map("Property")
 }
 
+model Booking {
+  id            String        @id @default(dbgenerated("gen_random_uuid()"))
+  userId        String        @map("userId")
+  propertyId    String        @map("propertyId")
+  checkIn       DateTime      @map("checkIn") @db.Timestamp(6)
+  checkOut      DateTime      @map("checkOut") @db.Timestamp(6)
+  status        BookingStatus @default(PENDING)
+  createdAt     DateTime      @default(now()) @map("createdAt") @db.Timestamp(6)
+  updatedAt     DateTime      @default(now()) @updatedAt @map("updatedAt") @db.Timestamp(6)
+  guests        Int           @default(1)
+  hostPayout    Float         @default(0)
+  paymentStatus PaymentStatus @default(PENDING)
+  platformFee   Float         @default(0)
+  totalAmount   Float         @default(0)
+  property      Property      @relation(fields: [propertyId], references: [id])
+  user          User          @relation(fields: [userId], references: [id])
+  reviews       Review[]
+  transactions  Transaction[]
+  cancellations CancellationRequest[]
+
+  @@index([userId])
+  @@index([propertyId])
+  @@index([paymentStatus])
+  @@map("Booking")
+}
+
 model Review {
-  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Text
-  stars       Int
-  comment     String
-  reviewDate  DateTime @default(now()) @map("reviewDate") @db.Timestamp
-  propertyId  String   @map("propertyId")
-  userId      String   @map("userId")
-  updatedAt   DateTime @default(now()) @updatedAt @map("updatedAt") @db.Timestamp
+  id            String   @id @default(dbgenerated("gen_random_uuid()"))
+  stars         Int
+  comment       String
+  reviewDate    DateTime @default(now()) @map("reviewDate")
+  propertyId    String   @map("propertyId")
+  userId        String   @map("userId")
+  updatedAt     DateTime @default(now()) @updatedAt @map("updatedAt")
+  accuracy      Int      @default(0)
+  bookingId     String?  @map("bookingId")
+  checkin       Int      @default(0)
+  cleanliness   Int      @default(0)
+  communication Int      @default(0)
+  hostRating    Int      @default(0) @map("hostRating")
+  location      Int      @default(0)
+  rating        String   @default("Pending")
+  value         Int      @default(0)
+  booking       Booking? @relation(fields: [bookingId], references: [id])
+  property      Property @relation(fields: [propertyId], references: [id])
+  user          User     @relation(fields: [userId], references: [id])
 
-  // Relations
-  property Property @relation(fields: [propertyId], references: [id])
-  user     User     @relation(fields: [userId], references: [id])
-
-  @@unique([userId, propertyId], name: "Review_userId_propertyId_key")
   @@map("Review")
+}
+
+model Transaction {
+  id             String           @id @default(dbgenerated("gen_random_uuid()"))
+  transactionRef String           @unique
+  invoiceNumber  String?
+  paymentType    PaymentType
+  paymentMethod  PaymentMethod
+  status         PaymentStatus    @default(PENDING)
+  amount         Float
+  fee            Float            @default(0)
+  netAmount      Float
+  currency       String           @default("KES")
+  senderType     TransactionParty
+  senderId       String?
+  receiverType   TransactionParty
+  receiverId     String?
+  bookingId      String?
+  refundedFromId String?
+  paymentDetails Json?
+  createdAt      DateTime         @default(now()) @db.Timestamp(6)
+  completedAt    DateTime?        @db.Timestamp(6)
+  logs           PaymentLog[]
+  booking        Booking?         @relation(fields: [bookingId], references: [id])
+  receiverUser   User?            @relation("ReceiverUser", fields: [receiverId], references: [id])
+  refundedFrom   Transaction?     @relation("RefundChain", fields: [refundedFromId], references: [id])
+  refunds        Transaction[]    @relation("RefundChain")
+  senderUser     User?            @relation("SenderUser", fields: [senderId], references: [id])
+
+  @@index([senderId], map: "Transaction_senderId_idx")
+  @@index([receiverId], map: "Transaction_receiverId_idx")
+  @@index([bookingId], map: "Transaction_bookingId_idx")
+  @@index([createdAt], map: "Transaction_createdAt_idx")
+  @@index([status], map: "Transaction_status_idx")
+  @@index([paymentType], map: "Transaction_paymentType_idx")
+  @@map("transactions")
+}
+
+model UserPaymentMethod {
+  id            String        @id @default(dbgenerated("gen_random_uuid()"))
+  userId        String
+  paymentMethod PaymentMethod
+  isDefault     Boolean       @default(false)
+  mpesaPhone    String?
+  cardLast4     String?
+  cardBrand     String?
+  cardToken     String?
+  bankName      String?
+  bankAccount   String?
+  bankBranch    String?
+  createdAt     DateTime      @default(now()) @db.Timestamp(6)
+  lastUsed      DateTime?     @db.Timestamp(6)
+  user          User          @relation(fields: [userId], references: [id])
+
+  @@unique([userId, paymentMethod, mpesaPhone], name: "UserPaymentMethod_unique_idx")
+  @@map("user_payment_methods")
+}
+
+model PaymentLog {
+  id              String       @id @default(dbgenerated("gen_random_uuid()"))
+  transactionId   String?
+  eventType       String
+  status          String
+  requestPayload  Json?
+  responsePayload Json?
+  errorMessage    String?
+  createdAt       DateTime     @default(now()) @db.Timestamp(6)
+  transaction     Transaction? @relation(fields: [transactionId], references: [id])
+
+  @@index([transactionId], map: "PaymentLog_transactionId_idx")
+  @@index([createdAt], map: "PaymentLog_createdAt_idx")
+  @@map("payment_logs")
+}
+
+model HostWalletTransaction {
+  id                String              @id @default(dbgenerated("gen_random_uuid()"))
+  userId            String              @map("userId")
+  actorUserId       String?             @map("actorUserId")
+  sourceType        TransactionParty    @default(SYSTEM)
+  sourceUserId      String?             @map("sourceUserId")
+  destinationType   TransactionParty    @default(SYSTEM)
+  destinationUserId String?             @map("destinationUserId")
+  type              HostTransactionType
+  amount            Float
+  note              String?
+  createdAt         DateTime            @default(now()) @map("createdAt") @db.Timestamp(6)
+  user              User                @relation(fields: [userId], references: [id])
+  actor             User?               @relation("HostWalletActor", fields: [actorUserId], references: [id])
+
+  @@index([userId], map: "host_wallet_user_idx")
+  @@index([actorUserId], map: "host_wallet_actor_idx")
+  @@index([createdAt], map: "host_wallet_created_idx")
+  @@map("host_wallet_transactions")
+}
+
+model CancellationRequest {
+  id                    String             @id @default(dbgenerated("gen_random_uuid()"))
+  bookingId             String             @map("bookingId")
+  hostId                String             @map("hostId")
+  guestId               String             @map("guestId")
+  status                CancellationStatus @default(PENDING)
+  reason                String
+  suggestionPropertyId  String?            @map("suggestionPropertyId")
+  createdAt             DateTime           @default(now()) @map("createdAt") @db.Timestamp(6)
+  respondedAt           DateTime?          @map("respondedAt") @db.Timestamp(6)
+
+  booking               Booking            @relation(fields: [bookingId], references: [id])
+  host                  User               @relation(fields: [hostId], references: [id])
+  guest                 User               @relation(fields: [guestId], references: [id])
+  suggestionProperty    Property?          @relation("CancellationSuggestion", fields: [suggestionPropertyId], references: [id])
+
+  @@index([bookingId], map: "cancellation_booking_idx")
+  @@index([hostId], map: "cancellation_host_idx")
+  @@index([guestId], map: "cancellation_guest_idx")
+  @@index([createdAt], map: "cancellation_created_idx")
+  @@map("cancellation_requests")
 }
 
 model tourism_destination {
@@ -112,11 +267,67 @@ model tourism_destination {
   ward            String
   text            String?
   image           String?
-  created_at      DateTime @default(now()) @db.Timestamp
-  updated_at      DateTime @default(now()) @db.Timestamp
+  created_at      DateTime @default(now()) @db.Timestamp(6)
+  updated_at      DateTime @default(now()) @db.Timestamp(6)
 
-  @@index([county], name: "tourism_destination_county_idx")
-  @@index([destinationName], name: "tourism_destination_destinationName_idx")
-  @@index([destinationName, county], name: "tourism_destination_subCounty_idx")
+  @@index([county])
+  @@index([destinationName])
+  @@index([destinationName, county], map: "tourism_destination_subCounty_idx")
   @@map("tourism_destination")
+}
+
+enum PaymentStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+  REFUNDED
+  CANCELLED
+}
+
+enum PaymentType {
+  DEPOSIT
+  WITHDRAWAL
+  BOOKING_PAYMENT
+  HOST_PAYOUT
+  REFUND
+  PLATFORM_FEE
+}
+
+enum PaymentMethod {
+  MPESA
+  CARD_VISA
+  CARD_MASTERCARD
+  CARD_AMEX
+  BANK_TRANSFER
+  PAYPAL
+  WALLET_BALANCE
+}
+
+enum TransactionParty {
+  USER
+  APP
+  HOST
+  CLIENT
+  SYSTEM
+}
+
+enum HostTransactionType {
+  PAYMENT
+  WITHDRAWAL
+  TRANSFER
+}
+
+enum CancellationStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+  WITHDRAWN
+}
+
+enum BookingStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+  COMPLETED
 }

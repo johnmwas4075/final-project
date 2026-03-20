@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input"
 const AUTH_KEY = "authUserId"
 const AUTH_NAME_KEY = "authUserFirstName"
 const AUTH_EMAIL_KEY = "authUserEmail"
+const AUTH_PHONE_KEY = "authUserPhone"
 
 export default function LoginPage() {
   const router = useRouter()
@@ -46,6 +47,7 @@ export default function LoginPage() {
         if (data?.userId) window.localStorage.setItem(AUTH_KEY, String(data.userId))
         if (data?.firstName) window.localStorage.setItem(AUTH_NAME_KEY, String(data.firstName))
         if (payload.email) window.localStorage.setItem(AUTH_EMAIL_KEY, String(payload.email))
+        if (data?.phoneNumber) window.localStorage.setItem(AUTH_PHONE_KEY, String(data.phoneNumber))
       }
 
       router.push("/userpage")

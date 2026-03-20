@@ -47,7 +47,7 @@ export async function POST(request: Request) {
     }
 
     const result = await pool.query(
-      `select id, password, "firstName" from "user" where email = $1 limit 1`,
+      `select id, password, "firstName", "phoneNumber" from "user" where email = $1 limit 1`,
       [email]
     )
 
@@ -61,7 +61,12 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Invalid credentials." }, { status: 401 })
     }
 
-    return NextResponse.json({ ok: true, userId: user.id, firstName: user.firstName })
+    return NextResponse.json({
+      ok: true,
+      userId: user.id,
+      firstName: user.firstName,
+      phoneNumber: user.phoneNumber,
+    })
   } catch (error) {
     console.error("Login error:", error)
     return NextResponse.json({ error: "Unable to log in." }, { status: 500 })

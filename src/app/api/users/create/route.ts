@@ -36,6 +36,7 @@ export async function POST(request: Request) {
 
   try {
     const body = await request.json()
+    const username = String(body.username || "").trim()
     const firstName = String(body.firstName || "").trim()
     const middleName = String(body.middleName || "").trim()
     const lastName = String(body.lastName || "").trim()
@@ -45,7 +46,7 @@ export async function POST(request: Request) {
     const hasAcceptedTerms = Boolean(body.hasAcceptedTerms)
     const hasAcceptedHostTerms = Boolean(body.hasAcceptedHostTerms)
 
-    if (!firstName || !lastName || !email || !phoneNumber || !password) {
+    if (!username || !firstName || !lastName || !email || !phoneNumber || !password) {
       return NextResponse.json({ error: "Missing required fields." }, { status: 400 })
     }
     if (!hasAcceptedTerms) {
@@ -53,8 +54,8 @@ export async function POST(request: Request) {
     }
 
     const existing = await pool.query(
-      `select id from "user" where email = $1 or "phoneNumber" = $2 limit 1`,
-      [email, phoneNumber]
+      `select id from "user" where email = $1 or "phoneNumber" = $2 or username = $3 limit 1`,
+      [email, phoneNumber, username]
     )
 
     if (existing.rowCount && existing.rowCount > 0) {
@@ -63,10 +64,11 @@ export async function POST(request: Request) {
 
     const result = await pool.query(
       `insert into "user"
-      ("firstName", "middleName", "lastName", "phoneNumber", "email", "password", "hasAcceptedTerms", "hasAcceptedHostTerms")
-      values ($1, $2, $3, $4, $5, $6, $7, $8)
+      (username, "firstName", "middleName", "lastName", "phoneNumber", "email", "password", "hasAcceptedTerms", "hasAcceptedHostTerms")
+      values ($1, $2, $3, $4, $5, $6, $7, $8, $9)
       returning id`,
       [
+        username,
         firstName,
         middleName || null,
         lastName,
