@@ -1,0 +1,18 @@
+
+  useEffect(() => {
+    if (!threadId) return
+    const fetchLog = () => {
+      fetch("/api/messages/log?threadId=" + encodeURIComponent(threadId))
+        .then((res) => res.json())
+        .then((data) => {
+          setLog(Array.isArray(data.messages) ? data.messages : [])
+        })
+        .catch(() => {
+          setLog([])
+        })
+    }
+    const interval = setInterval(fetchLog, 3000)
+    return () => {
+      clearInterval(interval)
+    }
+  }, [threadId])

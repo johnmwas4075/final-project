@@ -1,346 +1,14 @@
 "use client"
 
+import Link from "next/link"
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
-import { Bell, MessageCircle, User, Menu } from "lucide-react"
+import { User, Menu } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
-import { Textarea } from "@/components/ui/textarea"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import {
-  Sheet,
-  SheetContent,
-  SheetTrigger,
-  SheetClose,
-  SheetTitle,
-} from "@/components/ui/sheet"
+import { NotificationBell } from "@/components/notification-bell"
+            <MessageBell role="client" className="rounded-full" href="/messages" />
 
-const AUTH_KEY = "authUserId"
-const AUTH_NAME_KEY = "authUserFirstName"
-const AUTH_PHONE_KEY = "authUserPhone"
-
-type WrittenReview = {
-  id: string
-  propertyId: string
-  propertyName: string
-  hostId: string
-  reviewerName: string
-  reviewDate: string
-  stars: number
-  rating: string
-  comment: string
-  cleanliness: number
-  accuracy: number
-  communication: number
-  location: number
-  checkin: number
-  value: number
-  hostRating: number
-  checkIn: string
-  checkOut: string
-}
-
-type PendingBooking = {
-  id: string
-  propertyId: string
-  propertyName: string
-  hostId: string
-  checkIn: string
-  checkOut: string
-}
-
-export default function UserPage() {
-  const router = useRouter()
-  const [isReady, setIsReady] = useState(false)
-  const [firstName, setFirstName] = useState<string>("there")
-  const [activeSection, setActiveSection] = useState<string>("dashboard")
-  const [bookingTab, setBookingTab] = useState<"pending" | "past" | "cancelled">("pending")
-  const [reviewTab, setReviewTab] = useState<"pending" | "written">("written")
-  const [isReviewModalOpen, setIsReviewModalOpen] = useState(false)
-  const [isAddReviewModalOpen, setIsAddReviewModalOpen] = useState(false)
-  const [userId, setUserId] = useState<string | null>(null)
-  const [writtenReviews, setWrittenReviews] = useState<WrittenReview[]>([])
-  const [pendingReviews, setPendingReviews] = useState<PendingBooking[]>([])
-  const [isReviewsLoading, setIsReviewsLoading] = useState(false)
-  const [reviewsError, setReviewsError] = useState<string>("")
-  const [selectedBookingId, setSelectedBookingId] = useState<string | null>(null)
-  const [selectedBookingDates, setSelectedBookingDates] = useState<{ checkIn: string; checkOut: string } | null>(null)
-  const [addReviewProperty, setAddReviewProperty] = useState<string>("")
-  const [newReview, setNewReview] = useState({
-    stars: "",
-    rating: "",
-    comment: "",
-    cleanliness: "",
-    accuracy: "",
-    communication: "",
-    location: "",
-    checkin: "",
-    value: "",
-    host: "",
-  })
-  const [isDepositModalOpen, setIsDepositModalOpen] = useState(false)
-  const [isWithdrawModalOpen, setIsWithdrawModalOpen] = useState(false)
-  const [transactionTab, setTransactionTab] = useState<"all" | "payments" | "deposits" | "withdrawals">("all")
-  const [depositAmount, setDepositAmount] = useState("")
-  const [withdrawAmount, setWithdrawAmount] = useState("")
-  const [depositPhone, setDepositPhone] = useState("712345678")
-  const [saveDepositPhone, setSaveDepositPhone] = useState(true)
-  const [depositMethod, setDepositMethod] = useState<"mpesa" | "card" | "bank" | "paypal">("mpesa")
-  const [depositStep, setDepositStep] = useState<"details" | "confirm" | "send" | "success">("details")
-  const [cardType, setCardType] = useState<"visa" | "mastercard">("visa")
-  const [cardDetails, setCardDetails] = useState({
-    number: "",
-    name: "",
-    expiry: "",
-    cvv: "",
-  })
-  const [bankAccount, setBankAccount] = useState("")
-  const [paypalEmail, setPaypalEmail] = useState("")
-  const [withdrawMethod, setWithdrawMethod] = useState<"mpesa" | "bank" | "paypal">("mpesa")
-  const [withdrawPhone, setWithdrawPhone] = useState("712345678")
-  const [withdrawStep, setWithdrawStep] = useState<"details" | "confirm" | "success">("details")
-  const [selectedReview, setSelectedReview] = useState<{
-    property: string
-    propertyId: string
-    hostId: string
-    reviewerName: string
-    date: string
-    stars: string
-    rating: string
-    comment: string
-    checkIn: string
-    checkOut: string
-    ratings: {
-      cleanliness: number
-      accuracy: number
-      communication: number
-      location: number
-      checkin: number
-      value: number
-      hostRating: number
-    }
-  } | null>(null)
-
-  useEffect(() => {
-    if (typeof window === "undefined") return
-    const isAuthed = Boolean(window.localStorage.getItem(AUTH_KEY))
-    const storedName = window.localStorage.getItem(AUTH_NAME_KEY)
-    if (!isAuthed) {
-      router.replace("/login")
-      return
-    }
-    const storedPhone = window.localStorage.getItem(AUTH_PHONE_KEY)
-    if (storedPhone) {
-      const sanitized = storedPhone.replace(/^\+254/, "").replace(/\s+/g, "")
-      setDepositPhone(sanitized)
-      setWithdrawPhone(sanitized)
-    }
-    setUserId(window.localStorage.getItem(AUTH_KEY))
-    if (storedName) setFirstName(storedName)
-    setIsReady(true)
-  }, [router])
-
-  useEffect(() => {
-    if (!userId) return
-    const loadReviews = async () => {
-      setIsReviewsLoading(true)
-      setReviewsError("")
-      try {
-        const response = await fetch(`/api/reviews?userId=${encodeURIComponent(userId)}`)
-        if (!response.ok) {
-          throw new Error("Failed to load reviews")
-        }
-        const data = await response.json()
-        const written = (data.written ?? []).map((review: any) => ({
-          id: review.id,
-          propertyId: review.property?.id ?? "",
-          propertyName: review.property?.propertyName ?? "Unknown property",
-          hostId: review.property?.userId ?? "",
-          reviewerName: review.user?.username || review.user?.firstName || "Guest",
-          reviewDate: review.reviewDate,
-          stars: review.stars,
-          rating: review.rating,
-          comment: review.comment,
-          cleanliness: review.cleanliness,
-          accuracy: review.accuracy,
-          communication: review.communication,
-          location: review.location,
-          checkin: review.checkin,
-          value: review.value,
-          hostRating: review.hostRating,
-          checkIn: review.booking?.checkIn,
-          checkOut: review.booking?.checkOut,
-        }))
-        const pending = (data.pending ?? []).map((booking: any) => ({
-          id: booking.id,
-          propertyId: booking.property?.id ?? "",
-          propertyName: booking.property?.propertyName ?? "Unknown property",
-          hostId: booking.property?.userId ?? "",
-          checkIn: booking.checkIn,
-          checkOut: booking.checkOut,
-        }))
-        setWrittenReviews(written)
-        setPendingReviews(pending)
-      } catch (error) {
-        setReviewsError("Unable to load reviews.")
-      } finally {
-        setIsReviewsLoading(false)
-      }
-    }
-    loadReviews()
-  }, [userId])
-
-  const handleLogout = () => {
-    if (typeof window !== "undefined") {
-      window.localStorage.removeItem(AUTH_KEY)
-      window.localStorage.removeItem(AUTH_NAME_KEY)
-    }
-    router.push("/login")
-  }
-
-  const openReviewModal = (review: {
-    property: string
-    propertyId: string
-    hostId: string
-    date: string
-    stars: string
-    rating: string
-    comment: string
-    checkIn: string
-    checkOut: string
-    ratings: {
-      cleanliness: number
-      accuracy: number
-      communication: number
-      location: number
-      checkin: number
-      value: number
-      hostRating: number
-    }
-  }) => {
-    setSelectedReview(review)
-    setIsReviewModalOpen(true)
-  }
-
-  const openAddReviewModal = (booking: PendingBooking) => {
-    setAddReviewProperty(booking.propertyName)
-    setSelectedBookingId(booking.id)
-    setSelectedBookingDates({ checkIn: booking.checkIn, checkOut: booking.checkOut })
-    setNewReview({
-      stars: "",
-      rating: "",
-      comment: "",
-      cleanliness: "",
-      accuracy: "",
-      communication: "",
-      location: "",
-      checkin: "",
-      value: "",
-      host: "",
-    })
-    setIsAddReviewModalOpen(true)
-  }
-
-  const handlePostReview = async () => {
-    if (!userId || !selectedBookingId) return
-    const payload = {
-      userId,
-      bookingId: selectedBookingId,
-      stars: Number(newReview.stars),
-      rating: newReview.rating,
-      comment: newReview.comment,
-      cleanliness: Number(newReview.cleanliness),
-      accuracy: Number(newReview.accuracy),
-      communication: Number(newReview.communication),
-      location: Number(newReview.location),
-      checkin: Number(newReview.checkin),
-      value: Number(newReview.value),
-      hostRating: Number(newReview.host),
-    }
-    try {
-      const response = await fetch("/api/reviews", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      })
-      if (!response.ok) {
-        throw new Error("Failed to post review")
-      }
-      const data = await response.json()
-      const created = data.review
-      setWrittenReviews((prev) => [
-        {
-          id: created.id,
-          propertyId: created.property?.id ?? "",
-          propertyName: created.property?.propertyName ?? addReviewProperty,
-          hostId: created.property?.userId ?? "",
-          reviewerName: created.user?.username || created.user?.firstName || "Guest",
-          reviewDate: created.reviewDate,
-          stars: created.stars,
-          rating: created.rating,
-          comment: created.comment,
-          cleanliness: created.cleanliness,
-          accuracy: created.accuracy,
-          communication: created.communication,
-          location: created.location,
-          checkin: created.checkin,
-          value: created.value,
-          hostRating: created.hostRating,
-          checkIn: created.booking?.checkIn,
-          checkOut: created.booking?.checkOut,
-        },
-        ...prev,
-      ])
-      setPendingReviews((prev) => prev.filter((booking) => booking.id !== selectedBookingId))
-      setIsAddReviewModalOpen(false)
-    } catch (error) {
-      setReviewsError("Unable to post review.")
-    }
-  }
-
-  if (!isReady) return null
-
-  const formatDate = (value?: string) => {
-    if (!value) return "-"
-    const date = new Date(value)
-    if (Number.isNaN(date.getTime())) return "-"
-    return date.toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-    })
-  }
-
-  return (
-    <main className="min-h-screen bg-background">
-      <header className="sticky top-0 z-40 w-full border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="mx-auto flex h-16 items-center justify-between px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center gap-3">
-            <span className="text-xl font-bold text-rose-500">airbnb</span>
-          </div>
-
-          <div className="flex items-center gap-3">
-            {/* Message and Notification icons - visible on all screen sizes */}
-            <Button variant="ghost" size="icon" className="rounded-full">
-              <MessageCircle className="h-6 w-6" />
-            </Button>
-
-            <Button variant="ghost" size="icon" className="rounded-full">
-              <Bell className="h-6 w-6" />
-            </Button>
+            <NotificationBell role="client" className="rounded-full" />
 
             {/* Mobile/Desktop hamburger menu button */}
             <Sheet>
@@ -409,14 +77,10 @@ export default function UserPage() {
 
                   {/* Profile links */}
                   <SheetClose asChild>
-                    <Button
-                      variant="ghost"
-                      className="w-full justify-start rounded-md px-3 py-2 text-sm"
-                      onClick={() => router.push("/")}
-                    >
-                      Main page
-                    </Button>
-                  </SheetClose>
+  <Button variant="ghost" className="w-full justify-start rounded-md px-3 py-2 text-sm" asChild>
+    <Link href="/">Main page</Link>
+  </Button>
+</SheetClose>
                   <SheetClose asChild>
                     <Button
                       variant="ghost"
@@ -469,7 +133,7 @@ export default function UserPage() {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56">
-                <DropdownMenuItem onClick={() => router.push("/")}>Main page</DropdownMenuItem>
+                <DropdownMenuItem asChild><Link href="/">Main page</Link></DropdownMenuItem>
                 <DropdownMenuItem onClick={() => router.push("/profile")}>Profile settings</DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={handleLogout}>Log out</DropdownMenuItem>
@@ -479,9 +143,9 @@ export default function UserPage() {
         </div>
       </header>
 
-      <div className="mx-auto w-full px-4 py-6 sm:px-6">
-        <div className="flex min-h-[calc(100vh-64px)] flex-col lg:flex-row">
-          <aside className="hidden w-full border-b border-border bg-background p-4 lg:block lg:w-[240px] lg:border-b-0 lg:border-r">
+      <div className="flex h-[calc(100vh-64px)] w-full px-4 py-6 sm:px-6 overflow-hidden">
+        <div className="flex h-full w-full flex-col lg:flex-row overflow-hidden">
+          <aside className="hidden w-full border-b border-border bg-background p-4 lg:block lg:w-[240px] lg:border-b-0 lg:border-r lg:sticky lg:top-16 lg:h-[calc(100vh-64px)]">
             <nav className="space-y-0 text-sm">
               <button 
                 onClick={() => setActiveSection("dashboard")}
@@ -540,7 +204,7 @@ export default function UserPage() {
             </nav>
           </aside>
 
-          <section className="flex flex-1 flex-col gap-6 bg-background p-6">
+          <section className="flex w-full min-w-0 flex-1 flex-col gap-6 bg-background p-6 overflow-y-auto">
             {activeSection === "dashboard" && (
               <div>
                 <h2 className="text-2xl font-semibold text-foreground">Dashboard</h2>

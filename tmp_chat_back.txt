@@ -1,0 +1,9 @@
+              <Button
+                variant="ghost"
+                size="icon"
+                className="rounded-full"
+                onClick={() => router.push("/messages")}
+                aria-label="Back to messages"
+              >
+                <ChevronLeft className="h-5 w-5" />
+              </Button>

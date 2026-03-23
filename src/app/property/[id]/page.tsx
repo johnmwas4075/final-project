@@ -35,6 +35,7 @@ async function getPropertyData(id: string) {
       wardName: true,
       user: {
         select: {
+          id: true,
           firstName: true,
           lastName: true,
           username: true,
@@ -59,6 +60,7 @@ async function getPropertyData(id: string) {
     rating: 0,
     reviewCount: 0,
     description: property.description,
+    hostId: property.user?.id ?? "",
     host: {
       name:
         property.user?.username ||
@@ -138,6 +140,8 @@ export default async function PropertyPage({
               yearsHosting={property.host.yearsHosting}
               yearJoined={property.host.yearJoined}
               responseTime={property.host.responseTime}
+              hostId={property.hostId}
+              propertyName={property.name}
             />
 
           </div>

@@ -1,0 +1,13 @@
+            <div className="hidden md:flex items-center gap-3 border-b border-border pb-4 mb-4">
+              <div className="h-10 w-10 shrink-0 overflow-hidden rounded-full bg-muted">
+                <img
+                  src={(role === "host" ? threadData?.guest?.avatar : threadData?.host?.avatar) ?? "/images/avatars/default.png"}
+                  alt={(role === "host" ? ([threadData?.guest?.firstName, threadData?.guest?.lastName].filter(Boolean).join(" ") || threadData?.guest?.username) : ([threadData?.host?.firstName, threadData?.host?.lastName].filter(Boolean).join(" ") || threadData?.host?.username)) ?? "Profile"}
+                  className="h-full w-full object-cover"
+                />
+              </div>
+              <div className="min-w-0">
+                <p className="truncate text-sm font-semibold text-foreground">{(role === "host" ? ([threadData?.guest?.firstName, threadData?.guest?.lastName].filter(Boolean).join(" ") || threadData?.guest?.username) : ([threadData?.host?.firstName, threadData?.host?.lastName].filter(Boolean).join(" ") || threadData?.host?.username)) ?? "Chat"}</p>
+                <p className="truncate text-xs text-muted-foreground">@{(role === "host" ? threadData?.guest?.username : threadData?.host?.username) ?? "username"}</p>
+              </div>
+            </div>

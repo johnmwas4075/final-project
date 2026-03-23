@@ -1,61 +1,13 @@
 "use client"
 
+import Link from "next/link"
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
-import { Bell, MessageCircle, User, Menu } from "lucide-react"
+import { User, Menu } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import { Sheet, SheetContent, SheetTrigger, SheetClose, SheetTitle } from "@/components/ui/sheet"
-
-const AUTH_KEY = "authUserId"
-const AUTH_NAME_KEY = "authUserFirstName"
-const HOST_SECTION_KEY = "hostActiveSection"
-
-export function HostNavbar() {
-  const router = useRouter()
-  const [firstName, setFirstName] = useState<string>("there")
-
-  useEffect(() => {
-    if (typeof window === "undefined") return
-    const storedName = window.localStorage.getItem(AUTH_NAME_KEY)
-    if (storedName) setFirstName(storedName)
-  }, [])
-
-  const handleLogout = () => {
-    if (typeof window !== "undefined") {
-      window.localStorage.removeItem(AUTH_KEY)
-      window.localStorage.removeItem(AUTH_NAME_KEY)
-    }
-    router.push("/login")
-  }
-
-  const goToSection = (section: string) => {
-    if (typeof window !== "undefined") {
-      window.localStorage.setItem(HOST_SECTION_KEY, section)
-    }
-    router.push("/host")
-  }
-
-  return (
-    <header className="sticky top-0 z-40 w-full border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="mx-auto flex h-16 items-center justify-between px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center gap-3">
-          <span className="text-xl font-bold text-rose-500">airbnb</span>
-        </div>
-
-        <div className="flex items-center gap-3">
-          <Button variant="ghost" size="icon" className="rounded-full">
-            <MessageCircle className="h-6 w-6" />
-          </Button>
-          <Button variant="ghost" size="icon" className="rounded-full">
-            <Bell className="h-6 w-6" />
-          </Button>
+import { NotificationBell } from "@/components/notification-bell"
+          <MessageBell role="host" className="rounded-full" href="/messages" />
+          <NotificationBell role="host" className="rounded-full" href="/notifications" />
 
           <Sheet>
             <SheetTrigger asChild>
@@ -140,14 +92,10 @@ export function HostNavbar() {
                   </Button>
                 </SheetClose>
                 <SheetClose asChild>
-                  <Button
-                    variant="ghost"
-                    className="w-full justify-start rounded-md px-3 py-2 text-sm"
-                    onClick={() => router.push("/")}
-                  >
-                    Main page
-                  </Button>
-                </SheetClose>
+  <Button variant="ghost" className="w-full justify-start rounded-md px-3 py-2 text-sm" asChild>
+    <Link href="/">Main page</Link>
+  </Button>
+</SheetClose>
                 <SheetClose asChild>
                   <Button
                     variant="ghost"
@@ -195,7 +143,7 @@ export function HostNavbar() {
               <DropdownMenuItem onClick={() => goToSection("reviews")}>Reviews and Ratings</DropdownMenuItem>
               <DropdownMenuItem onClick={() => goToSection("settings")}>Host Settings</DropdownMenuItem>
               <DropdownMenuItem onClick={() => router.push("/host/airbnbs")}>Check Airbnbs</DropdownMenuItem>
-              <DropdownMenuItem onClick={() => router.push("/")}>Main page</DropdownMenuItem>
+              <DropdownMenuItem asChild><Link href="/">Main page</Link></DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={handleLogout}>Log out</DropdownMenuItem>
             </DropdownMenuContent>

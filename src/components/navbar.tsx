@@ -1,7 +1,7 @@
 "use client"
 
 import Link from "next/link"
-import { Search, Menu } from "lucide-react"
+import { Menu, Search } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
@@ -20,6 +20,8 @@ export function Navbar() {
   const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()
+  const isMain = pathname === "/"
+
   const [selectedLocation, setSelectedLocation] = useState<string>("")
   const [bedrooms, setBedrooms] = useState<string>("")
   const [month, setMonth] = useState<string>("")
@@ -37,6 +39,7 @@ export function Navbar() {
     router.push(next ? `${pathname}?${next}` : pathname)
     setIsFiltersOpen(false)
   }
+
   const handleSearch = (event?: React.FormEvent) => {
     if (event) event.preventDefault()
     performSearch()
@@ -63,38 +66,37 @@ export function Navbar() {
   }
 
   useEffect(() => {
-    const locationParam = searchParams.get("location") || ""
-    const bedroomsParam = searchParams.get("bedrooms") || ""
-    const monthParam = searchParams.get("month") || ""
-    setSelectedLocation(locationParam)
-    setBedrooms(bedroomsParam)
-    setMonth(monthParam)
-    
-    // Check authentication on mount
     const authed = checkAuth()
     setIsAuthed(authed)
     if (authed && typeof window !== "undefined") {
       const storedName = window.localStorage.getItem(AUTH_NAME_KEY)
       if (storedName) setFirstName(storedName)
     }
-  }, [searchParams])
+  }, [])
+
+  useEffect(() => {
+    if (!isMain) return
+    const locationParam = searchParams.get("location") || ""
+    const bedroomsParam = searchParams.get("bedrooms") || ""
+    const monthParam = searchParams.get("month") || ""
+    setSelectedLocation(locationParam)
+    setBedrooms(bedroomsParam)
+    setMonth(monthParam)
+  }, [isMain, searchParams])
 
   useEffect(() => {
     if (!isFiltersOpen) return
-
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as Node
       if (filtersRef.current && !filtersRef.current.contains(target)) {
         setIsFiltersOpen(false)
       }
     }
-
     document.addEventListener("mousedown", handleClickOutside)
     return () => document.removeEventListener("mousedown", handleClickOutside)
   }, [isFiltersOpen])
 
   useEffect(() => {
-    // Check authentication whenever the route changes
     const authed = checkAuth()
     setIsAuthed(authed)
     if (authed && typeof window !== "undefined") {
@@ -110,65 +112,69 @@ export function Navbar() {
           <span className="text-xl font-bold text-rose-500">airbnb</span>
         </Link>
 
-        <div className="hidden md:flex flex-col items-center" ref={filtersRef}>
-          <div className="my-1 flex w-full max-w-[980px] items-center rounded-full border border-border bg-background p-1 shadow-sm transition-colors hover:border-rose-500/60">
-            <button
-              type="button"
-              onClick={() => setIsFiltersOpen((open) => !open)}
-              className="flex-1 rounded-full px-4 py-2 text-left transition-colors hover:bg-muted"
-            >
-              <span className="block text-[10px] font-semibold uppercase tracking-wide text-foreground/80">
-                Location
-              </span>
-              <span className="block text-sm font-medium text-muted-foreground">
-                {selectedLocation || "Location"}
-              </span>
-            </button>
+        {isMain && (
+          <div className="hidden md:flex flex-col items-center" ref={filtersRef}>
+            <div className="my-1 flex w-full max-w-[980px] items-center rounded-full border border-border bg-background p-1 shadow-sm transition-colors hover:border-rose-500/60">
+              <button
+                type="button"
+                onClick={() => setIsFiltersOpen((open) => !open)}
+                className="flex-1 rounded-full px-4 py-2 text-left transition-colors hover:bg-muted"
+              >
+                <span className="block text-[10px] font-semibold uppercase tracking-wide text-foreground/80">
+                  Location
+                </span>
+                <span className="block text-sm font-medium text-muted-foreground">
+                  {selectedLocation || "Location"}
+                </span>
+              </button>
 
-            <div className="h-7 w-px bg-border" />
+              <div className="h-7 w-px bg-border" />
 
-            <button
-              type="button"
-              onClick={() => setIsFiltersOpen((open) => !open)}
-              className="flex-1 rounded-full px-4 py-2 text-left transition-colors hover:bg-muted"
-            >
-              <span className="block text-[10px] font-semibold uppercase tracking-wide text-foreground/80">
-                Bedrooms
-              </span>
-              <span className="block text-sm font-medium text-muted-foreground">
-                {bedrooms || "Any"}
-              </span>
-            </button>
+              <button
+                type="button"
+                onClick={() => setIsFiltersOpen((open) => !open)}
+                className="flex-1 rounded-full px-4 py-2 text-left transition-colors hover:bg-muted"
+              >
+                <span className="block text-[10px] font-semibold uppercase tracking-wide text-foreground/80">
+                  Bedrooms
+                </span>
+                <span className="block text-sm font-medium text-muted-foreground">
+                  {bedrooms || "Any"}
+                </span>
+              </button>
 
-            <div className="h-7 w-px bg-border" />
+              <div className="h-7 w-px bg-border" />
 
-            <button
-              type="button"
-              onClick={() => setIsFiltersOpen((open) => !open)}
-              className="flex-1 rounded-full px-4 py-2 text-left transition-colors hover:bg-muted"
-            >
-              <span className="block text-[10px] font-semibold uppercase tracking-wide text-foreground/80">
-                Month
-              </span>
-              <span className="block text-sm font-medium text-muted-foreground">
-                {month || "Month"}
-              </span>
-            </button>
+              <button
+                type="button"
+                onClick={() => setIsFiltersOpen((open) => !open)}
+                className="flex-1 rounded-full px-4 py-2 text-left transition-colors hover:bg-muted"
+              >
+                <span className="block text-[10px] font-semibold uppercase tracking-wide text-foreground/80">
+                  Month
+                </span>
+                <span className="block text-sm font-medium text-muted-foreground">
+                  {month || "Month"}
+                </span>
+              </button>
 
-            <Button
-              size="icon"
-              className="ml-1 h-10 w-10 rounded-full bg-rose-500 hover:bg-rose-600"
-              onClick={performSearch}
-            >
-              <Search className="h-5 w-5 text-white" />
-            </Button>
+              <Button
+                size="icon"
+                className="ml-1 h-10 w-10 rounded-full bg-rose-500 hover:bg-rose-600"
+                onClick={performSearch}
+              >
+                <Search className="h-5 w-5 text-white" />
+              </Button>
+            </div>
           </div>
-        </div>
+        )}
 
-        <Button variant="outline" size="sm" className="md:hidden rounded-full gap-2">
-          <Search className="h-4 w-4" />
-          <span>Search</span>
-        </Button>
+        {isMain && (
+          <Button variant="outline" size="sm" className="md:hidden rounded-full gap-2">
+            <Search className="h-4 w-4" />
+            <span>Search</span>
+          </Button>
+        )}
 
         <div className="flex items-center gap-2">
           <Button
@@ -181,10 +187,7 @@ export function Navbar() {
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button
-                variant="outline"
-                className="rounded-full gap-2 px-3"
-              >
+              <Button variant="outline" className="rounded-full gap-2 px-3">
                 <Menu className="h-4 w-4" />
                 <div className="h-7 w-7 rounded-full bg-muted flex items-center justify-center">
                   <span className="text-xs font-medium">{isAuthed ? firstName.charAt(0).toUpperCase() : "G"}</span>
@@ -201,9 +204,7 @@ export function Navbar() {
                   <DropdownMenuItem onClick={() => router.push("/profile")}>
                     Profile
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={handleLogout}>
-                    Log out
-                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={handleLogout}>Log out</DropdownMenuItem>
                 </>
               ) : (
                 <>
@@ -224,7 +225,7 @@ export function Navbar() {
         </div>
       </div>
 
-      {isFiltersOpen && (
+      {isMain && isFiltersOpen && (
         <div className="hidden md:block">
           <div className="mx-auto w-full max-w-7xl px-4 pb-3 sm:px-6 lg:px-8">
             <form

@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 
@@ -10,6 +10,7 @@ const AUTH_EMAIL_KEY = "authUserEmail"
 
 export default function HostVerifyPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [needsEmail, setNeedsEmail] = useState(true)
@@ -63,6 +64,7 @@ export default function HostVerifyPage() {
 
       const data = await response.json().catch(() => ({}))
       const userId = typeof window !== "undefined" ? window.localStorage.getItem(AUTH_KEY) : null
+      const next = searchParams.get("next")
       if (userId) {
         const statusResponse = await fetch("/api/users/host-terms-status", {
           method: "POST",
@@ -71,7 +73,11 @@ export default function HostVerifyPage() {
         })
         const statusData = await statusResponse.json().catch(() => ({}))
         if (statusResponse.ok && statusData?.hasAcceptedHostTerms) {
-          router.push("/host")
+          if (next) {
+            router.push(next)
+          } else {
+            router.push("/host")
+          }
           return
         }
       }

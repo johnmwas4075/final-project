@@ -141,6 +141,30 @@ export async function POST(request: Request) {
       })
     }
 
+
+    if (type === "PAYMENT") {
+      await tx.notification.create({
+        data: {
+          userId,
+          role: "host",
+          category: "payment",
+          title: "Payment received",
+          message: `You received a payment of KES ${amount.toLocaleString()}.`,
+        },
+      })
+
+      if (sourceUserId) {
+        await tx.notification.create({
+          data: {
+            userId: sourceUserId,
+            role: "client",
+            category: "payment",
+            title: "Payment processed",
+            message: `Your payment of KES ${amount.toLocaleString()} was sent to the host.`,
+          },
+        })
+      }
+    }
     return transaction
   })
 

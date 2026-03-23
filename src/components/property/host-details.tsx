@@ -1,6 +1,10 @@
+"use client"
+
 import Image from "next/image"
 import { Star, ShieldCheck, MessageCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { useRouter } from "next/navigation"
+import { setActiveMessageRole } from "@/lib/messages"
 
 interface HostDetailsProps {
   name: string
@@ -9,6 +13,8 @@ interface HostDetailsProps {
   yearsHosting: number
   yearJoined: number
   responseTime: string
+  hostId: string
+  propertyName: string
 }
 
 export function HostDetails({
@@ -18,7 +24,34 @@ export function HostDetails({
   yearsHosting,
   yearJoined,
   responseTime,
+  hostId,
+  propertyName,
 }: HostDetailsProps) {
+  const router = useRouter()
+
+  const handleMessageHost = async () => {
+    if (typeof window === "undefined") return
+    const guestId = window.localStorage.getItem("authUserId")
+    if (!guestId) {
+      router.push("/login")
+      return
+    }
+
+    const response = await fetch("/api/messages/thread", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ hostId, guestId }),
+    })
+
+    if (!response.ok) return
+    const data = await response.json()
+    const threadId = data?.thread?.id
+    if (!threadId) return
+
+    setActiveMessageRole("client")
+    router.push(`/messages/${threadId}?propertyName=${encodeURIComponent(propertyName)}`)
+  }
+
   return (
     <div className="py-6 border-b border-border">
       <div className="flex items-start gap-4">
@@ -53,7 +86,7 @@ export function HostDetails({
         </p>
       </div>
 
-      <Button className="mt-4 gap-2">
+      <Button className="mt-4 gap-2" onClick={handleMessageHost}>
         <MessageCircle className="h-4 w-4" />
         Message Host
       </Button>

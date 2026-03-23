@@ -27,8 +27,14 @@ model User {
   sentTransactions     Transaction[]       @relation("SenderUser")
   hostWallets          HostWalletTransaction[]
   hostWalletActor      HostWalletTransaction[] @relation("HostWalletActor")
-  cancellationRequests CancellationRequest[]
+  cancellationRequests CancellationRequest[] @relation("CancellationHost")
+  cancellations CancellationRequest[] @relation("CancellationGuest")
   paymentMethods       UserPaymentMethod[]
+  sentMessages       Message[]           @relation("SentMessages")
+  receivedMessages   Message[]           @relation("ReceivedMessages")
+  hostThreads        MessageThread[]     @relation("HostThreads")
+  guestThreads       MessageThread[]     @relation("GuestThreads")
+  notifications      Notification[]
 
   @@map("user")
 }
@@ -108,7 +114,7 @@ model Booking {
   user          User          @relation(fields: [userId], references: [id])
   reviews       Review[]
   transactions  Transaction[]
-  cancellations CancellationRequest[]
+  cancellations CancellationRequest[] @relation("BookingCancellations")
 
   @@index([userId])
   @@index([propertyId])
@@ -244,9 +250,9 @@ model CancellationRequest {
   createdAt             DateTime           @default(now()) @map("createdAt") @db.Timestamp(6)
   respondedAt           DateTime?          @map("respondedAt") @db.Timestamp(6)
 
-  booking               Booking            @relation(fields: [bookingId], references: [id])
-  host                  User               @relation(fields: [hostId], references: [id])
-  guest                 User               @relation(fields: [guestId], references: [id])
+  booking               Booking            @relation("BookingCancellations", fields: [bookingId], references: [id])
+  host                  User               @relation("CancellationHost", fields: [hostId], references: [id])
+  guest                 User               @relation("CancellationGuest", fields: [guestId], references: [id])
   suggestionProperty    Property?          @relation("CancellationSuggestion", fields: [suggestionPropertyId], references: [id])
 
   @@index([bookingId], map: "cancellation_booking_idx")
@@ -330,4 +336,75 @@ enum BookingStatus {
   CONFIRMED
   CANCELLED
   COMPLETED
+}
+
+model MessageThread {
+  id            String   @id @default(dbgenerated("gen_random_uuid()"))
+  hostId        String
+  guestId       String
+  createdAt     DateTime @default(now()) @db.Timestamp(6)
+  updatedAt     DateTime @default(now()) @updatedAt @db.Timestamp(6)
+  lastMessageAt DateTime? @db.Timestamp(6)
+
+  host          User     @relation("HostThreads", fields: [hostId], references: [id])
+  guest         User     @relation("GuestThreads", fields: [guestId], references: [id])
+  messages      Message[]
+
+  @@unique([hostId, guestId])
+  @@index([hostId])
+  @@index([guestId])
+  @@map("message_threads")
+}
+
+model Message {
+  id         String   @id @default(dbgenerated("gen_random_uuid()"))
+  threadId   String   @map("threadId")
+  senderId   String   @map("senderId")
+  receiverId String   @map("receiverId")
+  body       String
+  createdAt  DateTime @default(now()) @db.Timestamp(6)
+  readAt     DateTime? @db.Timestamp(6)
+
+  thread     MessageThread @relation(fields: [threadId], references: [id])
+  sender     User          @relation("SentMessages", fields: [senderId], references: [id])
+  receiver   User          @relation("ReceivedMessages", fields: [receiverId], references: [id])
+
+  @@index([threadId])
+  @@index([senderId])
+  @@index([receiverId])
+  @@index([createdAt])
+  @@map("messages")
+}
+
+model Notification {
+  id         String   @id @default(dbgenerated("gen_random_uuid()"))
+  userId     String   @map("userId")
+  role       String
+  category   String
+  title      String
+  message    String
+  createdAt  DateTime @default(now()) @db.Timestamp(6)
+  readAt     DateTime? @db.Timestamp(6)
+  bookingId  String?  @map("bookingId")
+  propertyId String?  @map("propertyId")
+
+  user       User     @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([role])
+  @@index([createdAt])
+  @@map("notifications")
+}
+
+model MessageTyping {
+  id        String   @id @default(dbgenerated("gen_random_uuid()"))
+  threadId  String
+  userId    String
+  isTyping  Boolean  @default(false)
+  updatedAt DateTime @default(now()) @updatedAt @db.Timestamp(6)
+
+  @@unique([threadId, userId])
+  @@index([threadId])
+  @@index([userId])
+  @@map("message_typing")
 }

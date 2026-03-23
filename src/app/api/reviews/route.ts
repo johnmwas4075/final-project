@@ -178,5 +178,18 @@ export async function POST(request: Request) {
     },
   })
 
+
+  await prisma.notification.create({
+    data: {
+      userId: created.property.userId,
+      role: "host",
+      category: "review",
+      title: "New review received",
+      message: `A guest reviewed ${created.property.propertyName}.`,
+      bookingId: created.booking?.id ?? null,
+      propertyId: created.property.id,
+    },
+  })
+
   return NextResponse.json({ review: created })
 }

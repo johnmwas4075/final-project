@@ -2,126 +2,92 @@
 
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
+import { Menu } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Textarea } from "@/components/ui/textarea"
+import { NotificationBell } from "@/components/notification-bell"
+            <MessageBell role="host" className="rounded-full" href="/messages" />
 
-const AUTH_KEY = "authUserId"
+            <NotificationBell role="host" className="rounded-full" href="/notifications" />
 
-const amenityOptions = [
-  { key: "pool", label: "Pool" },
-  { key: "wifi", label: "WiFi" },
-  { key: "parking", label: "Free parking" },
-  { key: "climate", label: "Air conditioning or heating" },
-  { key: "kitchen", label: "Kitchen" },
-  { key: "hot-tub", label: "Hot tub" },
-  { key: "washer-dryer", label: "Washer or dryer" },
-  { key: "tv", label: "TV or cable" },
-  { key: "generator", label: "Backup generator" },
-  { key: "nets", label: "Mosquito nets" },
-  { key: "smoke", label: "Smoke detector" },
-  { key: "fire", label: "Fire alarm" },
-]
+            <Sheet>
+              <SheetTrigger asChild>
+                <Button variant="ghost" size="icon" className="rounded-full md:hidden">
+                  <Menu className="h-6 w-6" />
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="right" className="w-[280px] p-0">
+                <SheetTitle className="px-4 pt-4">Menu</SheetTitle>
+                <div className="border-b border-border mt-2 mx-4" />
+                <nav className="space-y-1 p-4">
+                  {hostSidebarNav.map((item) => (
+                    <SheetClose asChild key={item.section}>
+                      <Button
+                        variant="ghost"
+                        className="w-full justify-start rounded-md px-3 py-2 text-sm"
+                        onClick={() => handleNavigate(item.section)}
+                      >
+                        {item.label}
+                      </Button>
+                    </SheetClose>
+                  ))}
+                  <SheetClose asChild>
+                    <Button
+                      variant="ghost"
+                      className="w-full justify-start rounded-md px-3 py-2 text-sm"
+                      onClick={() => router.push("/host/airbnbs")}
+                    >
+                      Check Airbnbs
+                    </Button>
+                  </SheetClose>
+                  <SheetClose asChild>
+                    <Button
+                      variant="ghost"
+                      className="w-full justify-start rounded-md px-3 py-2 text-sm"
+                      onClick={() => router.push("/")}
+                    >
+                      Main page
+                    </Button>
+                  </SheetClose>
+                  <SheetClose asChild>
+                    <Button
+                      variant="ghost"
+                      className="w-full justify-start rounded-md px-3 py-2 text-sm"
+                      onClick={() => router.push("/userpage")}
+                    >
+                      Client page
+                    </Button>
+                  </SheetClose>
+                </nav>
+              </SheetContent>
+            </Sheet>
+          </div>
+        </div>
+      </header>
 
-export default function AddPropertyPage() {
-  const router = useRouter()
-  const [userId, setUserId] = useState<string | null>(null)
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const [error, setError] = useState<string>("")
-  const [name, setName] = useState("")
-  const [description, setDescription] = useState("")
-  const [price, setPrice] = useState("")
-  const [minNights, setMinNights] = useState("1")
-  const [rooms, setRooms] = useState("1")
-  const [bathrooms, setBathrooms] = useState("1")
-  const [guests, setGuests] = useState("1")
-  const [county, setCounty] = useState("")
-  const [constituency, setConstituency] = useState("")
-  const [ward, setWard] = useState("")
-  const [images, setImages] = useState<string[]>([])
-  const [amenities, setAmenities] = useState<Record<string, boolean>>({})
+      <div className="flex h-[calc(100vh-64px)] w-full px-4 py-6 sm:px-6 overflow-hidden">
+        <div className="flex h-full w-full flex-col lg:flex-row overflow-hidden">
+          <aside className="hidden w-full border-b border-border bg-background p-4 lg:block lg:w-[240px] lg:border-b-0 lg:border-r lg:sticky lg:top-16 lg:h-[calc(100vh-64px)]">
+            <nav className="space-y-0 text-sm">
+              {hostSidebarNav.map((item, index) => (
+                <div key={item.section}>
+                  <button
+                    onClick={() => handleNavigate(item.section)}
+                    className={`w-full rounded-md px-3 py-2 text-left transition-colors ${
+                      index === 0
+                        ? "bg-rose-500/10 text-rose-600"
+                        : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                    }`}
+                  >
+                    {item.label}
+                  </button>
+                  {index < hostSidebarNav.length - 1 && <div className="my-2 border-b border-border" />}
+                </div>
+              ))}
+            </nav>
+          </aside>
 
-  useEffect(() => {
-    if (typeof window === "undefined") return
-    const storedUserId = window.localStorage.getItem(AUTH_KEY)
-    if (!storedUserId) {
-      router.replace("/login")
-      return
-    }
-    setUserId(storedUserId)
-  }, [router])
-
-  const handleFileUpload = async (files: FileList | null) => {
-    if (!files) return
-    const selected = Array.from(files)
-    const readers = selected.map(
-      (file) =>
-        new Promise<string>((resolve) => {
-          const reader = new FileReader()
-          reader.onload = () => resolve(String(reader.result))
-          reader.readAsDataURL(file)
-        })
-    )
-    const dataUrls = await Promise.all(readers)
-    setImages((prev) => [...prev, ...dataUrls])
-  }
-
-  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault()
-    if (!userId || isSubmitting) return
-    setIsSubmitting(true)
-    setError("")
-
-    if (images.length < 5 || images.length > 10) {
-      setError("Please add between 5 and 10 images.")
-      setIsSubmitting(false)
-      return
-    }
-
-    const payload = {
-      userId,
-      propertyName: name,
-      description,
-      price: Number(price),
-      minNights: Number(minNights),
-      rooms: Number(rooms),
-      bathrooms: Number(bathrooms),
-      guests: Number(guests),
-      photos: images,
-      amenities: amenityOptions.map((amenity) => ({
-        ...amenity,
-        available: Boolean(amenities[amenity.key]),
-      })),
-      countyName: county,
-      constituencyName: constituency,
-      wardName: ward,
-    }
-
-    try {
-      const response = await fetch("/api/host/properties", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      })
-
-      if (!response.ok) {
-        const data = await response.json().catch(() => ({}))
-        setError(data.error || "Unable to create property.")
-        setIsSubmitting(false)
-        return
-      }
-
-      router.push("/host")
-    } catch (err) {
-      setError("Unable to create property.")
-    } finally {
-      setIsSubmitting(false)
-    }
-  }
-
-  return (
-    <main className="min-h-screen bg-background">
-      <div className="mx-auto w-full max-w-3xl px-4 py-10 sm:px-6">
+          <section className="flex min-w-0 flex-1 flex-col gap-6 bg-background p-6 overflow-y-auto">
+            <div className="w-full max-w-3xl">
         <div className="space-y-2">
           <h1 className="text-3xl font-semibold text-foreground">Add a new Airbnb</h1>
           <p className="text-sm text-muted-foreground">Fill out the details to create a new listing.</p>
@@ -230,6 +196,9 @@ export default function AddPropertyPage() {
             </Button>
           </div>
         </form>
+      </div>
+          </section>
+        </div>
       </div>
     </main>
   )
