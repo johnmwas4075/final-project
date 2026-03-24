@@ -1,6 +1,9 @@
 import { LocationsList } from "@/components/locations-list"
 import { getPrisma } from "@/lib/prisma"
 
+export const dynamic = "force-dynamic"
+export const revalidate = 0
+
 interface PropertyCardData {
   id: string
   image: string
