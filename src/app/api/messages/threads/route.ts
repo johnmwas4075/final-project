@@ -36,6 +36,7 @@ export async function GET(request: Request) {
     const userIdParam = searchParams.get("userId")
     const emailParam = searchParams.get("email")
     const usernameParam = searchParams.get("username")
+    const roleParam = String(searchParams.get("role") || "all").toLowerCase()
 
     if (!userIdParam && !emailParam && !usernameParam) {
       return NextResponse.json({ error: "userId or email or username is required" }, { status: 400 })
@@ -70,18 +71,24 @@ export async function GET(request: Request) {
 
     const resolvedUserId = user.id
 
-    const threadRes = await pool.query(
-      'select id, "hostId", "guestId", "updatedAt", "lastMessageAt" from message_threads where "hostId" = $1 or "guestId" = $1 order by "updatedAt" desc',
-      [resolvedUserId]
-    )
+    const threadSql =
+      roleParam === "host"
+        ? 'select id, "hostId", "guestId", "updatedAt", "lastMessageAt" from message_threads where "hostId" = $1 order by "updatedAt" desc'
+        : roleParam === "client"
+          ? 'select id, "hostId", "guestId", "updatedAt", "lastMessageAt" from message_threads where "guestId" = $1 order by "updatedAt" desc'
+          : 'select id, "hostId", "guestId", "updatedAt", "lastMessageAt" from message_threads where "hostId" = $1 or "guestId" = $1 order by "updatedAt" desc'
+    const threadRes = await pool.query(threadSql, [resolvedUserId])
 
     let threads = threadRes.rows as Array<{ id: string; hostId: string; guestId: string; updatedAt: Date; lastMessageAt: Date | null }>
 
     if (threads.length === 0) {
-      const latestRes = await pool.query(
-        'select distinct on ("threadId") "threadId", body, "createdAt", "senderId", "receiverId" from messages where "senderId" = $1 or "receiverId" = $1 order by "threadId", "createdAt" desc',
-        [resolvedUserId]
-      )
+      const latestSql =
+        roleParam === "host"
+          ? 'select distinct on ("threadId") "threadId", body, "createdAt", "senderId", "receiverId" from messages where "senderId" = $1 or "receiverId" = $1 order by "threadId", "createdAt" desc'
+          : roleParam === "client"
+            ? 'select distinct on ("threadId") "threadId", body, "createdAt", "senderId", "receiverId" from messages where "senderId" = $1 or "receiverId" = $1 order by "threadId", "createdAt" desc'
+            : 'select distinct on ("threadId") "threadId", body, "createdAt", "senderId", "receiverId" from messages where "senderId" = $1 or "receiverId" = $1 order by "threadId", "createdAt" desc'
+      const latestRes = await pool.query(latestSql, [resolvedUserId])
       const latestRows = latestRes.rows as Array<{ threadId: string; body: string; createdAt: Date; senderId: string; receiverId: string }>
       const threadIds = Array.from(new Set(latestRows.map((row) => row.threadId).filter(Boolean)))
       if (threadIds.length === 0) {
@@ -116,25 +123,57 @@ export async function GET(request: Request) {
 
     const otherIds = Array.from(
       new Set(
-        threads.map((t) => (t.hostId === resolvedUserId ? t.guestId : t.hostId)).filter(Boolean)
+        threads
+          .map((t) => {
+            if (roleParam === "host") return t.guestId
+            if (roleParam === "client") return t.hostId
+            return t.hostId === resolvedUserId ? t.guestId : t.hostId
+          })
+          .filter(Boolean)
       )
     )
-    const otherRes = await pool.query(
-      'select id, username, "firstName", "lastName" from "user" where id = any($1)',
-      [otherIds]
-    )
-    const otherById = new Map<string, { id: string; username: string | null; firstName: string | null; lastName: string | null }>()
-    for (const row of otherRes.rows) otherById.set(row.id, row)
+    let otherRows: Array<{ id: string; username: string | null; firstName: string | null; middleName?: string | null; lastName: string | null; avatarUrl?: string | null }> = []
+    try {
+      const otherRes = await pool.query(
+        'select id, username, "firstName", "middleName", "lastName", "avatarUrl" from "user" where id = any($1)',
+        [otherIds]
+      )
+      otherRows = otherRes.rows
+    } catch (error) {
+      const message = String((error as Error)?.message || "").toLowerCase()
+      if (!message.includes("avatarurl")) {
+        throw error
+      }
+      const otherRes = await pool.query(
+        'select id, username, "firstName", "middleName", "lastName" from "user" where id = any($1)',
+        [otherIds]
+      )
+      otherRows = otherRes.rows.map((row) => ({ ...row, avatarUrl: null }))
+    }
+    const otherById = new Map<string, { id: string; username: string | null; firstName: string | null; middleName?: string | null; lastName: string | null; avatarUrl?: string | null }>()
+    for (const row of otherRows) otherById.set(row.id, row)
 
     const data = threads.map((thread) => {
       const latest = latestByThread.get(thread.id)
-      const otherId = thread.hostId === resolvedUserId ? thread.guestId : thread.hostId
+      const otherId =
+        roleParam === "host"
+          ? thread.guestId
+          : roleParam === "client"
+            ? thread.hostId
+            : thread.hostId === resolvedUserId
+              ? thread.guestId
+              : thread.hostId
       const other = otherId ? otherById.get(otherId) : null
+      const cleanUsername = (other?.username || "guest").replace(/^@+/, "")
+      const displayName =
+        [other?.firstName, other?.middleName, other?.lastName].filter(Boolean).join(" ") ||
+        cleanUsername ||
+        "Guest"
       return {
         id: thread.id,
-        name: [other?.firstName, other?.lastName].filter(Boolean).join(" ") || other?.username || "Guest",
-        username: other?.username || "guest",
-        avatar: "/images/avatars/default.png",
+        name: displayName,
+        username: cleanUsername || "guest",
+        avatar: other?.avatarUrl || "/images/avatars/default.png",
         lastMessage: latest?.body || "",
         timestamp: (latest?.createdAt || thread.lastMessageAt || thread.updatedAt)?.toISOString?.() || new Date().toISOString(),
         unreadCount: unreadByThread.get(thread.id) || 0,

@@ -33,6 +33,7 @@ import {
 const AUTH_KEY = "authUserId"
 const AUTH_NAME_KEY = "authUserFirstName"
 const AUTH_PHONE_KEY = "authUserPhone"
+const AUTH_EMAIL_KEY = "authUserEmail"
 
 type WrittenReview = {
   id: string
@@ -113,7 +114,9 @@ export default function UserPage() {
   const [paypalEmail, setPaypalEmail] = useState("")
   const [withdrawMethod, setWithdrawMethod] = useState<"mpesa" | "bank" | "paypal">("mpesa")
   const [withdrawPhone, setWithdrawPhone] = useState("712345678")
+  const [saveWithdrawPhone, setSaveWithdrawPhone] = useState(false)
   const [withdrawStep, setWithdrawStep] = useState<"details" | "confirm" | "success">("details")
+  const [walletReceiptEmail, setWalletReceiptEmail] = useState("john@email.com")
   const [selectedReview, setSelectedReview] = useState<{
     property: string
     propertyId: string
@@ -145,15 +148,41 @@ export default function UserPage() {
       return
     }
     const storedPhone = window.localStorage.getItem(AUTH_PHONE_KEY)
+    const storedEmail = window.localStorage.getItem(AUTH_EMAIL_KEY)
     if (storedPhone) {
       const sanitized = storedPhone.replace(/^\+254/, "").replace(/\s+/g, "")
       setDepositPhone(sanitized)
       setWithdrawPhone(sanitized)
     }
+    if (storedEmail) setWalletReceiptEmail(storedEmail)
     setUserId(window.localStorage.getItem(AUTH_KEY))
     if (storedName) setFirstName(storedName)
     setIsReady(true)
   }, [router])
+
+  useEffect(() => {
+    if (!userId) return
+    const loadProfileDefaults = async () => {
+      try {
+        const response = await fetch(`/api/users/profile?userId=${encodeURIComponent(userId)}`)
+        if (!response.ok) return
+        const data = await response.json()
+        const savedPhone = String(data?.user?.defaultMpesaPhone || data?.user?.phoneNumber || "")
+        const savedEmail = String(data?.user?.email || "")
+        if (savedPhone) {
+          const sanitized = savedPhone.replace(/^\+254/, "").replace(/\s+/g, "")
+          setDepositPhone(sanitized)
+          setWithdrawPhone(sanitized)
+        }
+        if (savedEmail) {
+          setWalletReceiptEmail(savedEmail)
+          window.localStorage.setItem(AUTH_EMAIL_KEY, savedEmail)
+        }
+      } catch {}
+    }
+
+    void loadProfileDefaults()
+  }, [userId])
 
   useEffect(() => {
     if (!userId) return
@@ -313,6 +342,33 @@ export default function UserPage() {
     }
   }
 
+  const persistDefaultMpesaPhone = async (phone: string) => {
+    if (!userId) return
+
+    try {
+      const response = await fetch(`/api/users/profile?userId=${encodeURIComponent(userId)}`)
+      if (!response.ok) return
+
+      const data = await response.json()
+      const user = data?.user
+      if (!user) return
+
+      await fetch("/api/users/profile", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          userId,
+          firstName: user.firstName,
+          middleName: user.middleName || "",
+          lastName: user.lastName,
+          email: user.email,
+          phoneNumber: user.phoneNumber,
+          defaultMpesaPhone: phone,
+        }),
+      })
+    } catch {}
+  }
+
   if (!isReady) return null
 
   const formatDate = (value?: string) => {
@@ -327,7 +383,7 @@ export default function UserPage() {
   }
 
   return (
-    <main className="min-h-screen bg-background">
+    <main className="h-screen overflow-hidden bg-background">
       <header className="sticky top-0 z-40 w-full border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="mx-auto flex h-16 items-center justify-between px-4 sm:px-6 lg:px-8">
           <div className="flex items-center gap-3">
@@ -479,8 +535,8 @@ export default function UserPage() {
       </header>
 
       <div className="mx-auto w-full px-4 py-6 sm:px-6">
-        <div className="flex min-h-[calc(100vh-64px)] flex-col lg:flex-row">
-          <aside className="hidden w-full border-b border-border bg-background p-4 lg:block lg:w-[240px] lg:border-b-0 lg:border-r">
+        <div className="flex h-[calc(100vh-64px)] flex-col overflow-hidden lg:flex-row">
+          <aside className="hidden h-full w-full flex-shrink-0 border-b border-border bg-background p-4 lg:block lg:w-[240px] lg:border-b-0 lg:border-r">
             <nav className="space-y-0 text-sm">
               <button 
                 onClick={() => setActiveSection("dashboard")}
@@ -539,7 +595,7 @@ export default function UserPage() {
             </nav>
           </aside>
 
-          <section className="flex flex-1 flex-col gap-6 bg-background p-6">
+          <section className="min-w-0 flex-1 overflow-y-auto bg-background p-6">
             {activeSection === "dashboard" && (
               <div>
                 <h2 className="text-2xl font-semibold text-foreground">Dashboard</h2>
@@ -1455,7 +1511,15 @@ export default function UserPage() {
                     <Button variant="outline" onClick={() => setDepositStep("details")}>
                       Back
                     </Button>
-                    <Button className="bg-rose-500 text-white hover:bg-rose-600" onClick={() => setDepositStep("send")}>
+                    <Button
+                      className="bg-rose-500 text-white hover:bg-rose-600"
+                      onClick={async () => {
+                        if (depositMethod === "mpesa" && saveDepositPhone) {
+                          await persistDefaultMpesaPhone(depositPhone)
+                        }
+                        setDepositStep("send")
+                      }}
+                    >
                       Confirm and Deposit
                     </Button>
                   </div>
@@ -1508,7 +1572,7 @@ export default function UserPage() {
                     </table>
                   </div>
                   <div className="mt-4 rounded-lg border border-border bg-muted/20 p-4 text-sm text-muted-foreground">
-                    <p>Receipt sent to: john@email.com</p>
+                    <p>Receipt sent to: {walletReceiptEmail}</p>
                     <p>SMS sent to: +254 {depositPhone}</p>
                   </div>
                   <div className="mt-6 flex flex-wrap gap-2">
@@ -1577,16 +1641,23 @@ export default function UserPage() {
                   {withdrawMethod === "mpesa" && (
                     <div className="rounded-lg border border-border bg-muted/20 p-4">
                       <p className="text-sm font-semibold text-foreground">Mpesa Details</p>
-                      <div className="mt-3 flex items-center gap-2">
-                        <span className="text-sm text-muted-foreground">Phone:</span>
-                        <Input
-                          type="text"
-                          value={withdrawPhone}
-                          onChange={(e) => setWithdrawPhone(e.target.value)}
-                        />
-                        <Button variant="outline" size="sm">
-                          Change
-                        </Button>
+                      <div className="mt-3 space-y-3">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm text-muted-foreground">+254</span>
+                          <Input
+                            type="text"
+                            value={withdrawPhone}
+                            onChange={(e) => setWithdrawPhone(e.target.value)}
+                          />
+                        </div>
+                        <label className="flex items-center gap-2 text-sm text-muted-foreground">
+                          <input
+                            type="checkbox"
+                            checked={saveWithdrawPhone}
+                            onChange={(event) => setSaveWithdrawPhone(event.target.checked)}
+                          />
+                          Save this number for future withdrawals
+                        </label>
                       </div>
                     </div>
                   )}
@@ -1668,7 +1739,12 @@ export default function UserPage() {
                     </Button>
                     <Button
                       className="bg-rose-500 text-white hover:bg-rose-600"
-                      onClick={() => setWithdrawStep("success")}
+                      onClick={async () => {
+                        if (withdrawMethod === "mpesa" && saveWithdrawPhone) {
+                          await persistDefaultMpesaPhone(withdrawPhone)
+                        }
+                        setWithdrawStep("success")
+                      }}
                     >
                       Withdraw
                     </Button>

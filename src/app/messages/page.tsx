@@ -106,7 +106,7 @@ export default function MessagesPage() {
       if (userId) params.set("userId", userId)
       if (userEmail) params.set("email", userEmail)
       if (username) params.set("username", username)
-      params.set("role", "all")
+      params.set("role", role)
       const res = await fetch(`/api/messages/threads?${params.toString()}`)
       const data = await res.json()
       return Array.isArray(data.threads) ? data.threads : []
@@ -418,7 +418,7 @@ export default function MessagesPage() {
               </div>
             </div>
 
-            <div className="space-y-4">
+            <div className="space-y-3">
               {filteredThreads.map((thread) => (
                 <div
                   key={thread.id}
@@ -433,12 +433,8 @@ export default function MessagesPage() {
                   }}
                   className="rounded-xl border border-border bg-card p-4 shadow-sm cursor-pointer"
                 >
-                  <div className="flex flex-wrap items-start justify-between gap-4">
-                    <div className="min-w-0">
-                      <p className="text-base font-semibold text-foreground">{thread.name}</p>
-                      <p className="text-xs text-muted-foreground">@{thread.username}</p>
-                      <p className="mt-2 text-sm text-muted-foreground truncate">{thread.lastMessage}</p>
-                    </div>
+                  <div className="flex items-center justify-between gap-4">
+                    <p className="truncate text-base font-semibold text-foreground">{thread.name}</p>
                     <div className="flex items-center gap-2 text-xs text-muted-foreground">
                       {thread.unreadCount > 0 && (
                         <span className="inline-flex h-5 min-w-[1.25rem] items-center justify-center rounded-full bg-rose-500 px-2 text-[10px] font-semibold text-white">
@@ -448,6 +444,10 @@ export default function MessagesPage() {
                       <span>{thread.timestamp}</span>
                     </div>
                   </div>
+                  <p className="mt-1 text-xs text-muted-foreground">@{thread.username}</p>
+                  <p className="mt-2 text-sm text-muted-foreground line-clamp-2">
+                    {thread.lastMessage}
+                  </p>
                 </div>
               ))}
 

@@ -11,6 +11,7 @@ model User {
   firstName            String              @map("firstName")
   middleName           String?             @map("middleName")
   lastName             String              @map("lastName")
+  avatarUrl            String?             @map("avatarUrl")
   phoneNumber          String              @unique @map("phoneNumber")
   email                String              @unique
   password             String

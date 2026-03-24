@@ -30,10 +30,18 @@ async function getLocationData(): Promise<LocationSectionData[]> {
       orderBy: { createdAt: "desc" },
     })
 
-    const grouped = new Map<string, PropertyCardData[]>()
+    const grouped = new Map<string, { label: string; properties: PropertyCardData[] }>()
     for (const property of properties) {
-      const location = (property.countyName ?? "").trim()
-      if (!location) continue
+      const rawLocation = (property.countyName ?? "").trim()
+      if (!rawLocation) continue
+      const normalized = rawLocation.toLowerCase()
+      const label =
+        grouped.get(normalized)?.label ||
+        rawLocation
+          .toLowerCase()
+          .split(/\s+/)
+          .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+          .join(" ")
 
       const reviewCount = property.reviews.length
       const rating =
@@ -54,15 +62,15 @@ async function getLocationData(): Promise<LocationSectionData[]> {
         rating,
       }
 
-      if (!grouped.has(location)) {
-        grouped.set(location, [])
+      if (!grouped.has(normalized)) {
+        grouped.set(normalized, { label, properties: [] })
       }
-      grouped.get(location)?.push(card)
+      grouped.get(normalized)?.properties.push(card)
     }
 
     return Array.from(grouped.entries())
-      .sort(([a], [b]) => a.localeCompare(b))
-      .map(([location, props]) => ({ location, properties: props }))
+      .sort(([, a], [, b]) => a.label.localeCompare(b.label))
+      .map(([, value]) => ({ location: value.label, properties: value.properties }))
   } catch (error) {
     return []
   }

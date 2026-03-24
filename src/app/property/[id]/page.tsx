@@ -57,6 +57,7 @@ async function getPropertyData(id: string) {
     bedrooms: property.rooms ?? 1,
     bathrooms: property.bathrooms ?? 1,
     pricePerNight: property.price ?? 0,
+    minNights: property.minNights ?? 1,
     rating: 0,
     reviewCount: 0,
     description: property.description,
@@ -141,6 +142,7 @@ export default async function PropertyPage({
               yearJoined={property.host.yearJoined}
               responseTime={property.host.responseTime}
               hostId={property.hostId}
+              hostUsername={property.host.username}
               propertyName={property.name}
             />
 
@@ -150,6 +152,9 @@ export default async function PropertyPage({
           <div className="lg:col-span-1">
             <div className="lg:pt-6">
               <BookingWidget
+                propertyId={property.id}
+                propertyName={property.name}
+                minNights={property.minNights}
                 pricePerNight={property.pricePerNight}
                 rating={property.rating}
                 reviewCount={property.reviewCount}

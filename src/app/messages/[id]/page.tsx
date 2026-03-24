@@ -54,12 +54,15 @@ export default function MessageThreadPage() {
   const searchParams = useSearchParams()
   const threadId = String(params?.id ?? "")
   const propertyName = searchParams.get("propertyName") || ""
+  const hostNameParam = searchParams.get("hostName") || ""
+  const hostUsernameParam = searchParams.get("hostUsername") || ""
   const [role, setRole] = useState<MessageRole>("client")
   const [isAuthed, setIsAuthed] = useState(false)
   const [firstName, setFirstName] = useState<string>("")
   const [threadData, setThreadData] = useState<any | null>(null)
   const [log, setLog] = useState<any[]>([])
   const [messageText, setMessageText] = useState("")
+  const [isSending, setIsSending] = useState(false)
   const [userId, setUserId] = useState<string | null>(null)
   const [isOtherTyping, setIsOtherTyping] = useState(false)
   const [isTyping, setIsTyping] = useState(false)
@@ -193,44 +196,68 @@ export default function MessageThreadPage() {
   }
 
   const handleSend = async () => {
-    if (!messageText.trim()) return
+    if (isSending) return
+    const nextBody = messageText.trim()
+    if (!nextBody) return
     if (!userId || !threadData) return
+    setIsSending(true)
     const isHost = role === "host"
     const hostId = threadData.hostId
     const guestId = threadData.guestId
     const receiverId = isHost ? guestId : hostId
 
-    const payload = {
-      threadId,
-      hostId,
-      guestId,
-      senderId: userId,
-      receiverId,
-      body: messageText.trim(),
-    }
+    try {
+      const payload = {
+        threadId,
+        hostId,
+        guestId,
+        senderId: userId,
+        receiverId,
+        body: nextBody,
+      }
 
-    const response = await fetch("/api/messages/send", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    })
+      const response = await fetch("/api/messages/send", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      })
 
-    if (!response.ok) return
-    const data = await response.json()
-    if (data?.message) {
-      setLog((prev) => [...prev, data.message])
-      setMessageText("")
-      setIsTyping(false)
-      if (typingIdleRef.current) clearTimeout(typingIdleRef.current)
-      requestAnimationFrame(() => handleInputResize())
+      if (!response.ok) {
+        return
+      }
+
+      const data = await response.json()
+      if (data?.message) {
+        setLog((prev) => [...prev, data.message])
+        setMessageText("")
+        setIsTyping(false)
+        if (typingIdleRef.current) clearTimeout(typingIdleRef.current)
+        requestAnimationFrame(() => handleInputResize())
+      }
+    } catch {
+      // leave message text for retry
+    } finally {
+      setIsSending(false)
     }
   }
 
   const otherUser =
-    role === "host" ? threadData?.guest : threadData?.host
+    userId && threadData?.hostId && threadData?.guestId
+      ? userId === threadData.hostId
+        ? threadData?.guest
+        : userId === threadData.guestId
+          ? threadData?.host
+          : role === "host"
+            ? threadData?.guest
+            : threadData?.host
+      : role === "host"
+        ? threadData?.guest
+        : threadData?.host
+  const cleanedUsername = ((otherUser?.username ?? hostUsernameParam) || "username").replace(/^@+/, "")
   const otherDisplayName =
-    [otherUser?.firstName, otherUser?.lastName].filter(Boolean).join(" ") ||
-    otherUser?.username ||
+    [otherUser?.firstName, otherUser?.middleName, otherUser?.lastName].filter(Boolean).join(" ") ||
+    cleanedUsername ||
+    hostNameParam ||
     "Chat"
 
   return (
@@ -251,7 +278,7 @@ export default function MessageThreadPage() {
             <div className="flex min-w-0 flex-1 items-center gap-3 px-3">
               <div className="h-10 w-10 shrink-0 overflow-hidden rounded-full bg-muted">
                 <img
-                  src={otherUser?.avatar ?? "/images/avatars/default.png"}
+                  src={otherUser?.avatarUrl ?? "/images/avatars/default.png"}
                   alt={otherDisplayName}
                   className="h-full w-full object-cover"
                 />
@@ -261,7 +288,7 @@ export default function MessageThreadPage() {
                   {otherDisplayName}
                 </p>
                 <p className="truncate text-xs text-muted-foreground">
-                  @{otherUser?.username ?? "username"}
+                  @{cleanedUsername}
                 </p>
               </div>
             </div>
@@ -410,14 +437,16 @@ export default function MessageThreadPage() {
               </Button>
               <div className="h-10 w-10 shrink-0 overflow-hidden rounded-full bg-muted">
                 <img
-                  src={otherUser?.avatar ?? "/images/avatars/default.png"}
+                  src={otherUser?.avatarUrl ?? "/images/avatars/default.png"}
                   alt={otherDisplayName}
                   className="h-full w-full object-cover"
                 />
               </div>
               <div className="min-w-0">
                 <p className="truncate text-sm font-semibold text-foreground">{otherDisplayName}</p>
-                <p className="truncate text-xs text-muted-foreground">@{otherUser?.username ?? "username"}</p>
+                <p className="truncate text-xs text-muted-foreground">
+                  @{cleanedUsername}
+                </p>
               </div>
             </div>
 

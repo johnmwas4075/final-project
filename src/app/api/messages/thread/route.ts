@@ -15,13 +15,30 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "threadId is required" }, { status: 400 })
   }
 
-  const thread = await prisma.messageThread.findUnique({
-    where: { id: threadId },
-    include: {
-      host: { select: { id: true, username: true, firstName: true, lastName: true } },
-      guest: { select: { id: true, username: true, firstName: true, lastName: true } },
-    },
-  })
+  let thread = null as any
+  try {
+    thread = await prisma.messageThread.findUnique({
+      where: { id: threadId },
+      include: {
+        host: { select: { id: true, username: true, firstName: true, middleName: true, lastName: true, avatarUrl: true } },
+        guest: { select: { id: true, username: true, firstName: true, middleName: true, lastName: true, avatarUrl: true } },
+      },
+    })
+  } catch (error) {
+    const message = String((error as Error)?.message || "").toLowerCase()
+    if (!message.includes("avatarurl")) {
+      throw error
+    }
+    thread = await prisma.messageThread.findUnique({
+      where: { id: threadId },
+      include: {
+        host: { select: { id: true, username: true, firstName: true, middleName: true, lastName: true } },
+        guest: { select: { id: true, username: true, firstName: true, middleName: true, lastName: true } },
+      },
+    })
+    if (thread?.host) thread.host.avatarUrl = null
+    if (thread?.guest) thread.guest.avatarUrl = null
+  }
 
   if (!thread) {
     return NextResponse.json({ error: "Thread not found" }, { status: 404 })

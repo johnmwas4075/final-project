@@ -38,6 +38,45 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: "userId and role are required" }, { status: 400 })
     }
 
+    if (role === "client") {
+      const expired = await pool.query(
+        'select b.id, b."propertyId", p."propertyName", b."createdAt" from "Booking" b join "Property" p on p.id = b."propertyId" where b."userId" = $1 and b."status" = $2 and b."createdAt" <= now() - interval \'3 days\'',
+        [userId, "PENDING"]
+      )
+
+      for (const row of expired.rows) {
+        const exists = await pool.query(
+          'select id from notifications where "userId" = $1 and role = $2 and category = $3 and "bookingId" = $4 limit 1',
+          [userId, role, "reservation-expired", row.id]
+        )
+
+        if (exists.rows.length === 0) {
+          const createdAt = new Date(row.createdAt)
+          const expiresAt = new Date(createdAt.getTime() + 3 * 24 * 60 * 60 * 1000)
+          await pool.query(
+            'insert into notifications ("userId", role, category, title, message, "createdAt", "bookingId", "propertyId") values ($1, $2, $3, $4, $5, now(), $6, $7)',
+            [
+              userId,
+              role,
+              "reservation-expired",
+              "Reservation expired",
+              `Your reservation for ${row.propertyName} expired on ${expiresAt.toDateString()}.`,
+              row.id,
+              row.propertyId,
+            ]
+          )
+        }
+      }
+
+      if (expired.rows.length > 0) {
+        const bookingIds = expired.rows.map((row: { id: string }) => row.id)
+        await pool.query(
+          'update "Booking" set status = $1, "paymentStatus" = $2, "updatedAt" = now() where id = any($3)',
+          ["CANCELLED", "CANCELLED", bookingIds]
+        )
+      }
+    }
+
     const result = await pool.query(
       'select id, "userId", role, category, title, message, "createdAt", "readAt", "bookingId", "propertyId" from notifications where "userId" = $1 and role = $2 order by "createdAt" desc',
       [userId, role]

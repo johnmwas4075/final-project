@@ -14,6 +14,7 @@ interface HostDetailsProps {
   yearJoined: number
   responseTime: string
   hostId: string
+  hostUsername?: string
   propertyName: string
 }
 
@@ -25,6 +26,7 @@ export function HostDetails({
   yearJoined,
   responseTime,
   hostId,
+  hostUsername,
   propertyName,
 }: HostDetailsProps) {
   const router = useRouter()
@@ -49,7 +51,11 @@ export function HostDetails({
     if (!threadId) return
 
     setActiveMessageRole("client")
-    router.push(`/messages/${threadId}?propertyName=${encodeURIComponent(propertyName)}`)
+    const params = new URLSearchParams()
+    if (propertyName) params.set("propertyName", propertyName)
+    if (name) params.set("hostName", name)
+    if (hostUsername) params.set("hostUsername", hostUsername)
+    router.push(`/messages/${threadId}?${params.toString()}`)
   }
 
   return (

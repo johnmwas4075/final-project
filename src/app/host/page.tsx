@@ -911,8 +911,8 @@ export default function HostPage() {
       </header>
 
       <div className="mx-auto w-full px-4 py-6 sm:px-6">
-        <div className="flex min-h-[calc(100vh-64px)] flex-col lg:flex-row">
-          <aside className="hidden w-full border-b border-border bg-background p-4 lg:block lg:w-[240px] lg:border-b-0 lg:border-r">
+        <div className="flex h-[calc(100vh-64px)] flex-col overflow-hidden lg:flex-row">
+          <aside className="hidden h-full w-full flex-shrink-0 border-b border-border bg-background p-4 lg:block lg:w-[240px] lg:border-b-0 lg:border-r">
             <nav className="space-y-0 text-sm">
               <button 
                 onClick={() => setActiveSection("dashboard")}
@@ -993,7 +993,7 @@ export default function HostPage() {
             </nav>
           </aside>
 
-          <section className="flex flex-1 flex-col gap-6 bg-background p-6">
+          <section className="min-w-0 flex-1 overflow-y-auto bg-background p-6">
             {activeSection === "dashboard" && (
               <div>
                 <h2 className="text-2xl font-semibold text-foreground">Dashboard</h2>
