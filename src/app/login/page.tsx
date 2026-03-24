@@ -10,6 +10,7 @@ const AUTH_KEY = "authUserId"
 const AUTH_NAME_KEY = "authUserFirstName"
 const AUTH_EMAIL_KEY = "authUserEmail"
 const AUTH_PHONE_KEY = "authUserPhone"
+const AUTH_USERNAME_KEY = "authUserUsername"
 
 export default function LoginPage() {
   const router = useRouter()
@@ -48,6 +49,7 @@ export default function LoginPage() {
         if (data?.firstName) window.localStorage.setItem(AUTH_NAME_KEY, String(data.firstName))
         if (payload.email) window.localStorage.setItem(AUTH_EMAIL_KEY, String(payload.email))
         if (data?.phoneNumber) window.localStorage.setItem(AUTH_PHONE_KEY, String(data.phoneNumber))
+        if (data?.username) window.localStorage.setItem(AUTH_USERNAME_KEY, String(data.username))
       }
 
       router.push("/userpage")

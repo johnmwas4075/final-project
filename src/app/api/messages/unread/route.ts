@@ -15,6 +15,10 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "userId is required" }, { status: 400 })
   }
 
+  if (!("message" in prisma)) {
+    return NextResponse.json({ unreadThreads: 0, warning: "Message model not available. Run prisma generate." })
+  }
+
   const threads = await prisma.message.findMany({
     where: { receiverId: userId, readAt: null },
     distinct: ["threadId"],

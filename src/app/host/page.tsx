@@ -1,11 +1,774 @@
 "use client"
 
-import Link from "next/link"
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { User, Menu } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { MessageBell } from "@/components/message-bell"
 import { NotificationBell } from "@/components/notification-bell"
+import { Input } from "@/components/ui/input"
+import { Textarea } from "@/components/ui/textarea"
+import { Switch } from "@/components/ui/switch"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import {
+  Sheet,
+  SheetContent,
+  SheetTrigger,
+  SheetClose,
+  SheetTitle,
+} from "@/components/ui/sheet"
+
+const AUTH_KEY = "authUserId"
+const AUTH_NAME_KEY = "authUserFirstName"
+const HOST_SECTION_KEY = "hostActiveSection"
+
+export default function HostPage() {
+  const router = useRouter()
+  const [isReady, setIsReady] = useState(false)
+  const [firstName, setFirstName] = useState<string>("there")
+  const [activeSection, setActiveSection] = useState<string>("dashboard")
+  const [bookingTab, setBookingTab] = useState<"checking-in" | "occupied" | "checking-out">("checking-in")
+  const [userId, setUserId] = useState<string | null>(null)
+  const [searchQuery, setSearchQuery] = useState("")
+  const [statusFilter, setStatusFilter] = useState<"all" | "active" | "inactive">("all")
+  const [bookingSearch, setBookingSearch] = useState("")
+  const [bookingFilter, setBookingFilter] = useState<"all" | "booked-today" | "cancelled-today" | "reserved">("all")
+  const [expandedBookingPropertyId, setExpandedBookingPropertyId] = useState<string | null>(null)
+  const [bookingCalendarDate, setBookingCalendarDate] = useState<Date>(new Date())
+  const [availabilitySearch, setAvailabilitySearch] = useState("")
+  const [availabilityFilter, setAvailabilityFilter] = useState<"all" | "custom" | "default">("all")
+  type EarningsType = "payment" | "withdrawal" | "transfer"
+  type EarningsTx = {
+    id: string
+    type: EarningsType
+    amount: number
+    date: string
+    note: string
+    actorUserId: string
+    sourceType: string
+    sourceUserId?: string
+    destinationType: string
+    destinationUserId?: string
+  }
+  const [earningsTransactions, setEarningsTransactions] = useState<EarningsTx[]>([])
+  const [earningsSearch, setEarningsSearch] = useState("")
+  const [earningsFilter, setEarningsFilter] = useState<"all" | "payments" | "transfers" | "withdrawals">("all")
+  const [earningsPage, setEarningsPage] = useState(1)
+  const [isWithdrawModalOpen, setIsWithdrawModalOpen] = useState(false)
+  const [isTransferModalOpen, setIsTransferModalOpen] = useState(false)
+  const [withdrawAmount, setWithdrawAmount] = useState("")
+  const [transferAmount, setTransferAmount] = useState("")
+  const [transferNote, setTransferNote] = useState("")
+  const [reviewsSearch, setReviewsSearch] = useState("")
+  const [reviewProperties, setReviewProperties] = useState<
+    {
+      id: string
+      name: string
+      image: string
+      county: string
+      constituency: string
+      ward: string
+      reviews: {
+        id: string
+        stars: number
+        comment: string
+        accuracy: number
+        cleanliness: number
+        communication: number
+        checkin: number
+        location: number
+        value: number
+        hostRating: number
+        reviewDate: string
+        reviewer: string
+      }[]
+    }[]
+  >([])
+  const amenityOptions = [
+    { key: "pool", label: "Pool" },
+    { key: "wifi", label: "WiFi" },
+    { key: "parking", label: "Free parking" },
+    { key: "climate", label: "Air conditioning or heating" },
+    { key: "kitchen", label: "Kitchen" },
+    { key: "hot-tub", label: "Hot tub" },
+    { key: "washer-dryer", label: "Washer or dryer" },
+    { key: "tv", label: "TV or cable" },
+    { key: "generator", label: "Backup generator" },
+    { key: "nets", label: "Mosquito nets" },
+    { key: "smoke", label: "Smoke detector" },
+    { key: "fire", label: "Fire alarm" },
+  ]
+  const [properties, setProperties] = useState<any[]>([])
+  const [selectedPropertyId, setSelectedPropertyId] = useState<string | null>(null)
+  const [isPropertyModalOpen, setIsPropertyModalOpen] = useState(false)
+  const [editProperty, setEditProperty] = useState({
+    id: "",
+    name: "",
+    price: "",
+    nights: "",
+    rooms: "",
+    bathrooms: "",
+    guests: "",
+    county: "",
+    constituency: "",
+    ward: "",
+    image: "",
+    description: "",
+  })
+  const [editAmenities, setEditAmenities] = useState<Record<string, boolean>>({})
+  const [editImages, setEditImages] = useState<string[]>([])
+  const [newImages, setNewImages] = useState<File[]>([])
+  const [imageError, setImageError] = useState<string>("")
+  const weekDays = [
+    { key: "mon", label: "Mon" },
+    { key: "tue", label: "Tue" },
+    { key: "wed", label: "Wed" },
+    { key: "thu", label: "Thu" },
+    { key: "fri", label: "Fri" },
+    { key: "sat", label: "Sat" },
+    { key: "sun", label: "Sun" },
+  ] as const
+  type WeekDayKey = (typeof weekDays)[number]["key"]
+  type DateOverride = "available" | "unavailable"
+  type PropertyAvailability = {
+    useCustom: boolean
+    weekly: Record<WeekDayKey, boolean>
+    dateOverrides: Record<string, DateOverride>
+  }
+  const [mainWeeklyAvailability, setMainWeeklyAvailability] = useState<Record<WeekDayKey, boolean>>({
+    mon: true,
+    tue: true,
+    wed: true,
+    thu: true,
+    fri: true,
+    sat: true,
+    sun: true,
+  })
+  const [propertyAvailability, setPropertyAvailability] = useState<Record<string, PropertyAvailability>>({})
+  const [expandedAvailabilityId, setExpandedAvailabilityId] = useState<string | null>(null)
+  const [calendarAnchorDate, setCalendarAnchorDate] = useState<Date>(new Date())
+  const [bookings, setBookings] = useState<
+    {
+      id: string
+      username: string
+      property: string
+      propertyId: string
+      checkIn: string
+      checkOut: string
+      status: "booked" | "reserved" | "cancelled"
+      createdAt: string
+      cancelledAt: string | null
+      payment: string
+    }[]
+  >([])
+
+  useEffect(() => {
+    if (typeof window === "undefined") return
+    const isAuthed = Boolean(window.localStorage.getItem(AUTH_KEY))
+    const storedName = window.localStorage.getItem(AUTH_NAME_KEY)
+    const storedUserId = window.localStorage.getItem(AUTH_KEY)
+    if (!isAuthed) {
+      router.replace("/login")
+      return
+    }
+    if (storedName) setFirstName(storedName)
+    if (storedUserId) setUserId(storedUserId)
+    const savedSection = window.localStorage.getItem(HOST_SECTION_KEY)
+    if (savedSection) {
+      setActiveSection(savedSection)
+      window.localStorage.removeItem(HOST_SECTION_KEY)
+    }
+    setIsReady(true)
+  }, [router])
+
+  useEffect(() => {
+    if (!userId) return
+    const loadProperties = async () => {
+      try {
+        const response = await fetch(`/api/host/properties?userId=${encodeURIComponent(userId)}`)
+        if (!response.ok) return
+        const data = await response.json()
+        const mapped = (data.properties ?? []).map((property: any) => ({
+          id: property.id,
+          name: property.propertyName,
+          image: property.photos?.[0] || "/images/property.jpg",
+          images: property.photos ?? [],
+          price: property.price ?? 0,
+          nights: property.minNights ?? 1,
+          rooms: property.rooms ?? 1,
+          bathrooms: property.bathrooms ?? 1,
+          guests: property.guests ?? 1,
+          county: property.countyName ?? "",
+          constituency: property.constituencyName ?? "",
+          ward: property.wardName ?? "",
+          active: true,
+          amenities: Array.isArray(property.amenities) ? property.amenities : amenityOptions,
+          ratings: {
+            cleanliness: 0,
+            accuracy: 0,
+            communication: 0,
+            location: 0,
+            checkin: 0,
+            value: 0,
+          },
+          description: property.description ?? "",
+        }))
+        setProperties(mapped)
+      } catch (error) {
+        setProperties([])
+      }
+    }
+    loadProperties()
+  }, [userId])
+
+  useEffect(() => {
+    if (!userId) return
+    const loadEarnings = async () => {
+      try {
+        const response = await fetch(`/api/host/earnings?userId=${encodeURIComponent(userId)}`)
+        if (!response.ok) return
+        const data = await response.json()
+        const mapped = (data.transactions ?? []).map((tx: any) => ({
+          id: tx.id,
+          type: (tx.type || "").toLowerCase(),
+          amount: Number(tx.amount) || 0,
+          note: tx.note || "",
+          date: String(tx.createdAt || "").slice(0, 10),
+          actorUserId: tx.actorUserId || "",
+          sourceType: (tx.sourceType || "").toLowerCase(),
+          sourceUserId: tx.sourceUserId || undefined,
+          destinationType: (tx.destinationType || "").toLowerCase(),
+          destinationUserId: tx.destinationUserId || undefined,
+        }))
+        setEarningsTransactions(mapped)
+      } catch (error) {
+        setEarningsTransactions([])
+      }
+    }
+    loadEarnings()
+  }, [userId])
+
+  useEffect(() => {
+    if (!userId) return
+    const loadReviews = async () => {
+      try {
+        const response = await fetch(`/api/host/reviews?userId=${encodeURIComponent(userId)}`)
+        if (!response.ok) return
+        const data = await response.json()
+        const mapped = (data.properties ?? []).map((property: any) => ({
+          id: property.id,
+          name: property.propertyName,
+          image: property.photos?.[0] || "/images/property.jpg",
+          county: property.countyName ?? "",
+          constituency: property.constituencyName ?? "",
+          ward: property.wardName ?? "",
+          reviews: (property.reviews ?? []).map((review: any) => ({
+            id: review.id,
+            stars: review.stars ?? 0,
+            comment: review.comment ?? "",
+            accuracy: review.accuracy ?? 0,
+            cleanliness: review.cleanliness ?? 0,
+            communication: review.communication ?? 0,
+            checkin: review.checkin ?? 0,
+            location: review.location ?? 0,
+            value: review.value ?? 0,
+            hostRating: review.hostRating ?? 0,
+            reviewDate: String(review.reviewDate || "").slice(0, 10),
+            reviewer:
+              review.user?.username ||
+              [review.user?.firstName, review.user?.lastName].filter(Boolean).join(" ") ||
+              "Guest",
+          })),
+        }))
+        setReviewProperties(mapped)
+      } catch {
+        setReviewProperties([])
+      }
+    }
+    loadReviews()
+  }, [userId])
+
+  useEffect(() => {
+    if (!userId) return
+    const loadBookings = async () => {
+      try {
+        const response = await fetch(`/api/host/bookings?userId=${encodeURIComponent(userId)}`)
+        if (!response.ok) return
+        const data = await response.json()
+        const mapped = (data.bookings ?? []).map((booking: any) => {
+          const rawStatus = String(booking.status || "").toUpperCase()
+          const status =
+            rawStatus === "CANCELLED"
+              ? "cancelled"
+              : rawStatus === "PENDING"
+                ? "reserved"
+                : "booked"
+          const paymentStatus = String(booking.paymentStatus || "").toLowerCase() || "pending"
+          const username =
+            booking.user?.username ||
+            [booking.user?.firstName, booking.user?.lastName].filter(Boolean).join(" ") ||
+            "Guest"
+          return {
+            id: booking.id,
+            username: username.startsWith("@") ? username : `@${username}`,
+            property: booking.property?.propertyName ?? "Unknown property",
+            propertyId: booking.property?.id ?? "",
+            checkIn: String(booking.checkIn || "").slice(0, 10),
+            checkOut: String(booking.checkOut || "").slice(0, 10),
+            status,
+            createdAt: String(booking.createdAt || "").slice(0, 10),
+            cancelledAt: rawStatus === "CANCELLED" ? String(booking.updatedAt || "").slice(0, 10) : null,
+            payment: paymentStatus,
+          }
+        })
+        setBookings(mapped)
+      } catch (error) {
+        setBookings([])
+      }
+    }
+    loadBookings()
+  }, [userId])
+
+  useEffect(() => {
+    if (properties.length === 0) return
+    setPropertyAvailability((prev) => {
+      const next = { ...prev }
+      for (const property of properties) {
+        if (!next[property.id]) {
+          next[property.id] = {
+            useCustom: false,
+            weekly: { ...mainWeeklyAvailability },
+            dateOverrides: {},
+          }
+        }
+      }
+      return next
+    })
+  }, [properties, mainWeeklyAvailability])
+
+  const handleLogout = () => {
+    if (typeof window !== "undefined") {
+      window.localStorage.removeItem(AUTH_KEY)
+      window.localStorage.removeItem(AUTH_NAME_KEY)
+    }
+    router.push("/login")
+  }
+
+  if (!isReady) return null
+
+  const parseDate = (value: string) => {
+    const [y, m, d] = value.split("-").map(Number)
+    return new Date(y, m - 1, d)
+  }
+
+  const isSameDay = (a: Date, b: Date) =>
+    a.getFullYear() === b.getFullYear() &&
+    a.getMonth() === b.getMonth() &&
+    a.getDate() === b.getDate()
+
+  const addDays = (date: Date, days: number) => {
+    const next = new Date(date)
+    next.setDate(next.getDate() + days)
+    return next
+  }
+
+  const toDateKey = (date: Date) => {
+    const y = date.getFullYear()
+    const m = String(date.getMonth() + 1).padStart(2, "0")
+    const d = String(date.getDate()).padStart(2, "0")
+    return `${y}-${m}-${d}`
+  }
+
+  const isBetweenInclusive = (date: Date, start: Date, end: Date) => {
+    const day = new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime()
+    const s = new Date(start.getFullYear(), start.getMonth(), start.getDate()).getTime()
+    const e = new Date(end.getFullYear(), end.getMonth(), end.getDate()).getTime()
+    return day >= s && day <= e
+  }
+
+  const bookingForDate = (propertyId: string, date: Date) => {
+    return bookings.find((booking) => {
+      if (booking.propertyId !== propertyId) return false
+      const checkIn = parseDate(booking.checkIn)
+      const checkOut = parseDate(booking.checkOut)
+      return isBetweenInclusive(date, checkIn, checkOut)
+    })
+  }
+
+  const getWeekdayKey = (date: Date): WeekDayKey => {
+    const jsDay = date.getDay()
+    const map: WeekDayKey[] = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"]
+    return map[jsDay]
+  }
+
+  const isDateAvailable = (propertyId: string, date: Date) => {
+    const override = propertyAvailability[propertyId]
+    const weeklySource = override?.useCustom ? override.weekly : mainWeeklyAvailability
+    const weekdayKey = getWeekdayKey(date)
+    let available = weeklySource[weekdayKey]
+    const key = toDateKey(date)
+    const dateOverride = override?.dateOverrides?.[key]
+    if (dateOverride === "unavailable") available = false
+    if (dateOverride === "available") available = true
+    return available
+  }
+
+  const toggleDateOverride = (propertyId: string, date: Date) => {
+    const key = toDateKey(date)
+    setPropertyAvailability((prev) => {
+      const current = prev[propertyId]
+      if (!current) return prev
+      const existing = current.dateOverrides[key]
+      const nextOverride: DateOverride | undefined =
+        existing === "unavailable" ? "available" : existing === "available" ? undefined : "unavailable"
+      const nextOverrides = { ...current.dateOverrides }
+      if (nextOverride) {
+        nextOverrides[key] = nextOverride
+      } else {
+        delete nextOverrides[key]
+      }
+      return {
+        ...prev,
+        [propertyId]: {
+          ...current,
+          dateOverrides: nextOverrides,
+        },
+      }
+    })
+  }
+
+  const getMonthGrid = (anchor: Date) => {
+    const year = anchor.getFullYear()
+    const month = anchor.getMonth()
+    const first = new Date(year, month, 1)
+    const startDay = first.getDay()
+    const daysInMonth = new Date(year, month + 1, 0).getDate()
+    const leading = Array.from({ length: startDay }, () => null)
+    const days = Array.from({ length: daysInMonth }, (_, i) => new Date(year, month, i + 1))
+    return [...leading, ...days]
+  }
+
+  const today = new Date()
+
+  const visibleBookings = bookings.filter((booking) => {
+    const checkIn = parseDate(booking.checkIn)
+    const checkOut = parseDate(booking.checkOut)
+
+    if (bookingTab === "checking-in") {
+      return isSameDay(today, checkIn)
+    }
+
+    if (bookingTab === "occupied") {
+      return today > checkIn && today < checkOut
+    }
+
+    const showUntil = addDays(checkOut, 1)
+    return isSameDay(today, checkOut) || isSameDay(today, showUntil)
+  })
+
+  const bookingsByProperty = (propertyId: string) =>
+    bookings.filter((booking) => booking.propertyId === propertyId)
+
+  const bookingMatchesDate = (booking: any, date: Date) => {
+    const checkIn = parseDate(booking.checkIn)
+    const checkOut = parseDate(booking.checkOut)
+    return isBetweenInclusive(date, checkIn, checkOut)
+  }
+
+  const bookingStatusForDate = (propertyId: string, date: Date) => {
+    const match = bookingsByProperty(propertyId).find((booking) => bookingMatchesDate(booking, date))
+    return match ? match.status : null
+  }
+
+  const totalBookings = bookings.length
+  const totalOccupied = bookings.filter((booking) => {
+    if (booking.status !== "booked") return false
+    const checkIn = parseDate(booking.checkIn)
+    const checkOut = parseDate(booking.checkOut)
+    return today >= checkIn && today <= checkOut
+  }).length
+  const totalReserved = bookings.filter((booking) => booking.status === "reserved").length
+  const totalCancelled = bookings.filter((booking) => booking.status === "cancelled").length
+
+  const filteredBookings = bookings.filter((booking) => {
+    const matchesSearch =
+      booking.property.toLowerCase().includes(bookingSearch.toLowerCase()) ||
+      booking.username.toLowerCase().includes(bookingSearch.toLowerCase())
+    if (bookingFilter === "booked-today") {
+      return matchesSearch && booking.status === "booked" && isSameDay(today, parseDate(booking.createdAt))
+    }
+    if (bookingFilter === "cancelled-today") {
+      return (
+        matchesSearch &&
+        booking.status === "cancelled" &&
+        booking.cancelledAt &&
+        isSameDay(today, parseDate(booking.cancelledAt))
+      )
+    }
+    if (bookingFilter === "reserved") {
+      return matchesSearch && booking.status === "reserved"
+    }
+    return matchesSearch
+  })
+
+  const paymentColor =
+    bookingTab === "checking-in"
+      ? "text-red-500"
+      : bookingTab === "occupied"
+        ? "text-yellow-500"
+        : "text-green-500"
+
+  const filteredProperties = properties.filter((property) => {
+    const matchesQuery =
+      property.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      property.county.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      property.constituency.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      property.ward.toLowerCase().includes(searchQuery.toLowerCase())
+
+    if (statusFilter === "active") return property.active && matchesQuery
+    if (statusFilter === "inactive") return !property.active && matchesQuery
+    return matchesQuery
+  })
+
+  const filteredAvailabilityProperties = properties.filter((property) => {
+    const matchesQuery =
+      property.name.toLowerCase().includes(availabilitySearch.toLowerCase()) ||
+      property.county.toLowerCase().includes(availabilitySearch.toLowerCase()) ||
+      property.constituency.toLowerCase().includes(availabilitySearch.toLowerCase()) ||
+      property.ward.toLowerCase().includes(availabilitySearch.toLowerCase())
+
+    const availability = propertyAvailability[property.id]
+    const useCustom = availability?.useCustom ?? false
+
+    if (availabilityFilter === "custom") return useCustom && matchesQuery
+    if (availabilityFilter === "default") return !useCustom && matchesQuery
+    return matchesQuery
+  })
+
+  const formatCurrency = (value: number) =>
+    new Intl.NumberFormat("en-KE", { style: "currency", currency: "KES", maximumFractionDigits: 0 }).format(value)
+
+  const paymentsTotal = earningsTransactions
+    .filter((tx) => tx.type === "payment")
+    .reduce((sum, tx) => sum + tx.amount, 0)
+  const systemFee = Number((paymentsTotal * 0.05).toFixed(2))
+  const revenueTotal = paymentsTotal - systemFee
+  const withdrawalsTotal = earningsTransactions
+    .filter((tx) => tx.type === "withdrawal")
+    .reduce((sum, tx) => sum + tx.amount, 0)
+  const transfersTotal = earningsTransactions
+    .filter((tx) => tx.type === "transfer")
+    .reduce((sum, tx) => sum + tx.amount, 0)
+  const availableBalance = Math.max(revenueTotal - withdrawalsTotal - transfersTotal, 0)
+
+  const filteredEarnings = earningsTransactions.filter((tx) => {
+    const matchesSearch =
+      tx.note.toLowerCase().includes(earningsSearch.toLowerCase()) ||
+      tx.date.includes(earningsSearch) ||
+      tx.type.includes(earningsSearch.toLowerCase())
+    if (earningsFilter === "payments") return tx.type === "payment" && matchesSearch
+    if (earningsFilter === "transfers") return tx.type === "transfer" && matchesSearch
+    if (earningsFilter === "withdrawals") return tx.type === "withdrawal" && matchesSearch
+    return matchesSearch
+  })
+
+  const earningsPageSize = 20
+  const totalPages = Math.max(1, Math.ceil(filteredEarnings.length / earningsPageSize))
+  const currentPage = Math.min(earningsPage, totalPages)
+  const startIndex = (currentPage - 1) * earningsPageSize
+  const pagedEarnings = filteredEarnings.slice(startIndex, startIndex + earningsPageSize)
+
+  const allReviews = reviewProperties.flatMap((property) => property.reviews)
+  const totalReviews = allReviews.length
+  const totalComments = allReviews.filter((review) => review.comment && review.comment.trim().length > 0).length
+  const sumStars = allReviews.reduce((sum, review) => sum + review.stars, 0)
+  const sumAccuracy = allReviews.reduce((sum, review) => sum + review.accuracy, 0)
+  const sumCheckin = allReviews.reduce((sum, review) => sum + review.checkin, 0)
+  const sumCleanliness = allReviews.reduce((sum, review) => sum + review.cleanliness, 0)
+  const sumCommunication = allReviews.reduce((sum, review) => sum + review.communication, 0)
+  const sumHostRating = allReviews.reduce((sum, review) => sum + review.hostRating, 0)
+  const avg = (sum: number) => (totalReviews > 0 ? (sum / totalReviews).toFixed(2) : "0.00")
+  const filteredReviewProperties = reviewProperties.filter((property) => {
+    const query = reviewsSearch.toLowerCase()
+    return (
+      property.name.toLowerCase().includes(query) ||
+      property.county.toLowerCase().includes(query) ||
+      property.constituency.toLowerCase().includes(query) ||
+      property.ward.toLowerCase().includes(query)
+    )
+  })
+
+  const openPropertyModal = (propertyId: string) => {
+    const property = properties.find((item) => item.id === propertyId)
+    if (!property) return
+    setSelectedPropertyId(propertyId)
+    setEditProperty({
+      id: property.id,
+      name: property.name,
+      price: String(property.price),
+      nights: String(property.nights),
+      rooms: String(property.rooms ?? 1),
+      bathrooms: String(property.bathrooms ?? 1),
+      guests: String(property.guests ?? 1),
+      county: property.county,
+      constituency: property.constituency,
+      ward: property.ward,
+      image: property.image,
+      description: property.description,
+    })
+    setEditImages(property.images ?? [property.image])
+    setNewImages([])
+    setImageError("")
+    setEditAmenities(
+      property.amenities.reduce<Record<string, boolean>>((acc, amenity) => {
+        acc[amenity.key] = amenity.available
+        return acc
+      }, {})
+    )
+    setIsPropertyModalOpen(true)
+  }
+
+  const savePropertyChanges = async () => {
+    if (editImages.length < 5 || editImages.length > 10) {
+      setImageError("Please keep between 5 and 10 images.")
+      return
+    }
+    if (!userId) return
+
+    const payload = {
+      userId,
+      propertyId: editProperty.id,
+      propertyName: editProperty.name,
+      description: editProperty.description,
+      price: Number(editProperty.price),
+      rooms: Number(editProperty.rooms),
+      bathrooms: Number(editProperty.bathrooms),
+      guests: Number(editProperty.guests),
+      minNights: Number(editProperty.nights),
+      photos: editImages,
+      amenities: amenityOptions.map((amenity) => ({
+        ...amenity,
+        available: Boolean(editAmenities[amenity.key]),
+      })),
+      countyName: editProperty.county,
+      constituencyName: editProperty.constituency,
+      wardName: editProperty.ward,
+    }
+
+    try {
+      const response = await fetch("/api/host/properties", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      })
+      if (response.ok) {
+        const data = await response.json()
+        const updated = data.property
+        setProperties((prev) =>
+          prev.map((property) =>
+            property.id === editProperty.id
+              ? {
+                  ...property,
+                  name: updated.propertyName,
+                  price: updated.price,
+                  nights: updated.minNights,
+                  rooms: updated.rooms,
+                  bathrooms: updated.bathrooms,
+                  guests: updated.guests,
+                  county: updated.countyName ?? "",
+                  constituency: updated.constituencyName ?? "",
+                  ward: updated.wardName ?? "",
+                  image: updated.photos?.[0] || property.image,
+                  images: updated.photos ?? property.images,
+                  description: updated.description ?? property.description,
+                  amenities: updated.amenities ?? property.amenities,
+                }
+              : property
+          )
+        )
+      }
+    } catch (error) {
+      // ignore for now
+    }
+    setProperties((prev) =>
+      prev.map((property) =>
+        property.id === editProperty.id
+          ? {
+              ...property,
+              name: editProperty.name,
+              price: Number(editProperty.price),
+              nights: Number(editProperty.nights),
+              rooms: Number(editProperty.rooms),
+              bathrooms: Number(editProperty.bathrooms),
+              guests: Number(editProperty.guests),
+              county: editProperty.county,
+              constituency: editProperty.constituency,
+              ward: editProperty.ward,
+              image: editImages[0] || editProperty.image,
+              images: editImages,
+              description: editProperty.description,
+              amenities: amenityOptions.map((amenity) => ({
+                ...amenity,
+                available: Boolean(editAmenities[amenity.key]),
+              })),
+            }
+          : property
+      )
+    )
+    setIsPropertyModalOpen(false)
+  }
+
+  const addEarningsTx = async (type: EarningsType, amount: number, note: string) => {
+    if (!userId) return
+    const response = await fetch("/api/host/earnings", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        userId,
+        actorUserId: userId,
+        type: type.toUpperCase(),
+        amount,
+        note,
+      }),
+    })
+    if (!response.ok) return
+    const data = await response.json()
+    const tx = data.transaction
+    if (!tx) return
+    setEarningsTransactions((prev) => [
+      {
+        id: tx.id,
+        type: (tx.type || "").toLowerCase(),
+        amount: Number(tx.amount) || 0,
+        note: tx.note || "",
+        date: String(tx.createdAt || "").slice(0, 10),
+        actorUserId: tx.actorUserId || "",
+        sourceType: (tx.sourceType || "").toLowerCase(),
+        sourceUserId: tx.sourceUserId || undefined,
+        destinationType: (tx.destinationType || "").toLowerCase(),
+        destinationUserId: tx.destinationUserId || undefined,
+      },
+      ...prev,
+    ])
+  }
+
+  return (
+    <main className="min-h-screen bg-background">
+      <header className="sticky top-0 z-40 w-full border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+        <div className="mx-auto flex h-16 items-center justify-between px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center gap-3">
+            <span className="text-xl font-bold text-rose-500">airbnb</span>
+          </div>
+
+          <div className="flex items-center gap-3">
+            {/* Message and Notification icons - visible on all screen sizes */}
+
             <MessageBell role="host" className="rounded-full" href="/messages" />
 
             <NotificationBell role="host" className="rounded-full" href="/notifications" />
@@ -95,10 +858,14 @@ import { NotificationBell } from "@/components/notification-bell"
 
                   {/* Profile links */}
                   <SheetClose asChild>
-  <Button variant="ghost" className="w-full justify-start rounded-md px-3 py-2 text-sm" asChild>
-    <Link href="/">Main page</Link>
-  </Button>
-</SheetClose>
+                    <Button
+                      variant="ghost"
+                      className="w-full justify-start rounded-md px-3 py-2 text-sm"
+                      onClick={() => router.push("/")}
+                    >
+                      Main page
+                    </Button>
+                  </SheetClose>
 
                   {/* Logout separator */}
                   <div className="my-2 border-t border-border" />
@@ -134,7 +901,7 @@ import { NotificationBell } from "@/components/notification-bell"
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56">
-                <DropdownMenuItem asChild><Link href="/">Main page</Link></DropdownMenuItem>
+                <DropdownMenuItem onClick={() => router.push("/")}>Main page</DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={handleLogout}>Log out</DropdownMenuItem>
               </DropdownMenuContent>
@@ -143,9 +910,9 @@ import { NotificationBell } from "@/components/notification-bell"
         </div>
       </header>
 
-      <div className="mx-auto flex h-[calc(100vh-64px)] w-full px-4 py-6 sm:px-6 overflow-hidden">
-        <div className="flex h-full w-full flex-col lg:flex-row overflow-hidden">
-          <aside className="hidden w-full border-b border-border bg-background p-4 lg:block lg:w-[240px] lg:border-b-0 lg:border-r lg:sticky lg:top-16 lg:h-[calc(100vh-64px)]">
+      <div className="mx-auto w-full px-4 py-6 sm:px-6">
+        <div className="flex min-h-[calc(100vh-64px)] flex-col lg:flex-row">
+          <aside className="hidden w-full border-b border-border bg-background p-4 lg:block lg:w-[240px] lg:border-b-0 lg:border-r">
             <nav className="space-y-0 text-sm">
               <button 
                 onClick={() => setActiveSection("dashboard")}
@@ -226,7 +993,7 @@ import { NotificationBell } from "@/components/notification-bell"
             </nav>
           </aside>
 
-          <section className="flex min-w-0 flex-1 flex-col gap-6 bg-background p-6 overflow-y-auto">
+          <section className="flex flex-1 flex-col gap-6 bg-background p-6">
             {activeSection === "dashboard" && (
               <div>
                 <h2 className="text-2xl font-semibold text-foreground">Dashboard</h2>
@@ -352,7 +1119,7 @@ import { NotificationBell } from "@/components/notification-bell"
                             {property.county}, {property.constituency}, {property.ward}
                           </p>
                           <p className="text-sm text-muted-foreground">
-                            KSh {property.price} · {property.nights} nights
+                            KSh {property.price} � {property.nights} nights
                           </p>
                         </div>
                       </button>
@@ -521,7 +1288,7 @@ import { NotificationBell } from "@/components/notification-bell"
                               <div>
                                 <h5 className="text-sm font-semibold text-foreground">Monthly Overrides</h5>
                                 <p className="text-xs text-muted-foreground">
-                                  Click a date to toggle unavailable → available → default.
+                                  Click a date to toggle unavailable ? available ? default.
                                 </p>
                               </div>
                               <div className="flex items-center gap-2">
@@ -568,7 +1335,7 @@ import { NotificationBell } from "@/components/notification-bell"
                                     onClick={() => toggleDateOverride(property.id, date)}
                                     title={
                                       booking
-                                        ? `${booking.username} · ${booking.checkIn} → ${booking.checkOut}`
+                                        ? `${booking.username} � ${booking.checkIn} ? ${booking.checkOut}`
                                         : undefined
                                     }
                                     className={`relative flex h-9 w-full items-center justify-center rounded-md border text-xs font-medium transition-colors ${
@@ -727,10 +1494,10 @@ import { NotificationBell } from "@/components/notification-bell"
                                 ? tx.actorUserId === userId
                                   ? "You"
                                   : `${tx.actorUserId.slice(0, 8)}...`
-                                : "—"}
+                                : "�"}
                             </td>
                             <td className="px-4 py-3 text-muted-foreground capitalize">
-                              {tx.sourceType} → {tx.destinationType}
+                              {tx.sourceType} ? {tx.destinationType}
                             </td>
                             <td className="px-4 py-3 text-muted-foreground">{tx.note}</td>
                             <td className="px-4 py-3 text-right font-medium text-foreground">
@@ -935,7 +1702,7 @@ import { NotificationBell } from "@/components/notification-bell"
                             {property.county}, {property.constituency}, {property.ward}
                           </p>
                           <p className="text-sm text-muted-foreground">
-                            Avg stars {avgRating} · {reviewCount} reviews
+                            Avg stars {avgRating} � {reviewCount} reviews
                           </p>
                           <div className="mt-2 grid grid-cols-2 gap-1 text-xs text-muted-foreground">
                             <span>Accuracy {avgAccuracy}</span>

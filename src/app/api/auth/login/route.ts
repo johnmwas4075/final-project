@@ -47,7 +47,7 @@ export async function POST(request: Request) {
     }
 
     const result = await pool.query(
-      `select id, password, "firstName", "phoneNumber" from "user" where email = $1 limit 1`,
+      `select id, password, username, "firstName", "phoneNumber" from "user" where email = $1 limit 1`,
       [email]
     )
 
@@ -64,6 +64,7 @@ export async function POST(request: Request) {
     return NextResponse.json({
       ok: true,
       userId: user.id,
+      username: user.username,
       firstName: user.firstName,
       phoneNumber: user.phoneNumber,
     })

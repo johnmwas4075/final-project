@@ -21,10 +21,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import {
-  MessageRole,
-  getActiveMessageRole,
-} from "@/lib/messages"
+import { MessageRole, getActiveMessageRole } from "@/lib/messages"
 import { getActiveNotificationRole } from "@/lib/notifications"
 
 const AUTH_KEY = "authUserId"
@@ -107,7 +104,10 @@ export default function MessageThreadPage() {
   useEffect(() => {
     if (!threadId) return
     const fetchLog = () => {
-      const logUrl = "/api/messages/log?threadId=" + encodeURIComponent(threadId) + (userId ? "&userId=" + encodeURIComponent(userId) : "")
+      const logUrl =
+        "/api/messages/log?threadId=" +
+        encodeURIComponent(threadId) +
+        (userId ? "&userId=" + encodeURIComponent(userId) : "")
       fetch(logUrl)
         .then((res) => res.json())
         .then((data) => setLog(Array.isArray(data.messages) ? data.messages : []))
@@ -121,7 +121,12 @@ export default function MessageThreadPage() {
   useEffect(() => {
     if (!threadId || !userId) return
     const fetchTyping = () => {
-      fetch("/api/messages/typing?threadId=" + encodeURIComponent(threadId) + "&userId=" + encodeURIComponent(userId))
+      fetch(
+        "/api/messages/typing?threadId=" +
+          encodeURIComponent(threadId) +
+          "&userId=" +
+          encodeURIComponent(userId)
+      )
         .then((res) => res.json())
         .then((data) => {
           setIsOtherTyping(Array.isArray(data.typing) && data.typing.length > 0)
@@ -177,7 +182,9 @@ export default function MessageThreadPage() {
   }
 
   const handleBecomeHost = () => {
-    const authed = Boolean(typeof window !== "undefined" && window.localStorage.getItem(AUTH_KEY))
+    const authed = Boolean(
+      typeof window !== "undefined" && window.localStorage.getItem(AUTH_KEY)
+    )
     router.push(authed ? "/host/verify" : "/login")
   }
 
@@ -219,6 +226,13 @@ export default function MessageThreadPage() {
     }
   }
 
+  const otherUser =
+    role === "host" ? threadData?.guest : threadData?.host
+  const otherDisplayName =
+    [otherUser?.firstName, otherUser?.lastName].filter(Boolean).join(" ") ||
+    otherUser?.username ||
+    "Chat"
+
   return (
     <main className="h-screen bg-background overflow-hidden">
       <header className="sticky top-0 z-40 w-full border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -237,14 +251,18 @@ export default function MessageThreadPage() {
             <div className="flex min-w-0 flex-1 items-center gap-3 px-3">
               <div className="h-10 w-10 shrink-0 overflow-hidden rounded-full bg-muted">
                 <img
-                  src={(role === "host" ? threadData?.guest?.avatar : threadData?.host?.avatar) ?? "/images/avatars/default.png"}
-                  alt={(role === "host" ? ([threadData?.guest?.firstName, threadData?.guest?.lastName].filter(Boolean).join(" ") || threadData?.guest?.username) : ([threadData?.host?.firstName, threadData?.host?.lastName].filter(Boolean).join(" ") || threadData?.host?.username)) ?? "Profile"}
+                  src={otherUser?.avatar ?? "/images/avatars/default.png"}
+                  alt={otherDisplayName}
                   className="h-full w-full object-cover"
                 />
               </div>
               <div className="min-w-0">
-                <p className="truncate text-sm font-semibold text-foreground">{(role === "host" ? ([threadData?.guest?.firstName, threadData?.guest?.lastName].filter(Boolean).join(" ") || threadData?.guest?.username) : ([threadData?.host?.firstName, threadData?.host?.lastName].filter(Boolean).join(" ") || threadData?.host?.username)) ?? "Chat"}</p>
-                <p className="truncate text-xs text-muted-foreground">@{(role === "host" ? threadData?.guest?.username : threadData?.host?.username) ?? "username"}</p>
+                <p className="truncate text-sm font-semibold text-foreground">
+                  {otherDisplayName}
+                </p>
+                <p className="truncate text-xs text-muted-foreground">
+                  @{otherUser?.username ?? "username"}
+                </p>
               </div>
             </div>
 
@@ -325,9 +343,7 @@ export default function MessageThreadPage() {
 
             <div className="flex items-center gap-3">
               <MessageBell role={role} className="rounded-full" href="/messages" />
-
               <NotificationBell role={role} className="rounded-full" href="/notifications" />
-
               <Button
                 variant="ghost"
                 className="hidden rounded-full text-sm font-medium md:inline-flex"
@@ -394,14 +410,14 @@ export default function MessageThreadPage() {
               </Button>
               <div className="h-10 w-10 shrink-0 overflow-hidden rounded-full bg-muted">
                 <img
-                  src={(role === "host" ? threadData?.guest?.avatar : threadData?.host?.avatar) ?? "/images/avatars/default.png"}
-                  alt={(role === "host" ? ([threadData?.guest?.firstName, threadData?.guest?.lastName].filter(Boolean).join(" ") || threadData?.guest?.username) : ([threadData?.host?.firstName, threadData?.host?.lastName].filter(Boolean).join(" ") || threadData?.host?.username)) ?? "Profile"}
+                  src={otherUser?.avatar ?? "/images/avatars/default.png"}
+                  alt={otherDisplayName}
                   className="h-full w-full object-cover"
                 />
               </div>
               <div className="min-w-0">
-                <p className="truncate text-sm font-semibold text-foreground">{(role === "host" ? ([threadData?.guest?.firstName, threadData?.guest?.lastName].filter(Boolean).join(" ") || threadData?.guest?.username) : ([threadData?.host?.firstName, threadData?.host?.lastName].filter(Boolean).join(" ") || threadData?.host?.username)) ?? "Chat"}</p>
-                <p className="truncate text-xs text-muted-foreground">@{(role === "host" ? threadData?.guest?.username : threadData?.host?.username) ?? "username"}</p>
+                <p className="truncate text-sm font-semibold text-foreground">{otherDisplayName}</p>
+                <p className="truncate text-xs text-muted-foreground">@{otherUser?.username ?? "username"}</p>
               </div>
             </div>
 
@@ -422,12 +438,25 @@ export default function MessageThreadPage() {
                         key={msg.id}
                         className={"flex " + (msg.senderId === userId ? "justify-end" : "justify-start")}
                       >
-                        <div className={"max-w-[640px] rounded-2xl px-4 py-2 text-sm shadow-sm " + (msg.senderId === userId ? "bg-rose-500 text-white" : "bg-muted text-foreground")}
+                        <div
+                          className={
+                            "max-w-[640px] rounded-2xl px-4 py-2 text-sm shadow-sm " +
+                            (msg.senderId === userId ? "bg-rose-500 text-white" : "bg-muted text-foreground")
+                          }
                         >
                           <p>{msg.body}</p>
-                          <p className={"mt-2 text-[10px] " + (msg.senderId === userId ? "text-white/80" : "text-muted-foreground")}
+                          <p
+                            className={
+                              "mt-2 text-[10px] " +
+                              (msg.senderId === userId ? "text-white/80" : "text-muted-foreground")
+                            }
                           >
-                            {new Date(msg.createdAt).toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}
+                            {new Date(msg.createdAt).toLocaleString("en-US", {
+                              month: "short",
+                              day: "numeric",
+                              hour: "numeric",
+                              minute: "2-digit",
+                            })}
                           </p>
                         </div>
                       </div>
@@ -439,3 +468,43 @@ export default function MessageThreadPage() {
                   <div ref={bottomRef} />
                 </div>
               )}
+
+              <div className="border-t border-border pt-4">
+                <div className="flex items-end gap-3">
+                  <textarea
+                    ref={textareaRef}
+                    value={messageText}
+                    onChange={(event) => {
+                      setMessageText(event.target.value)
+                      setIsTyping(true)
+                      handleInputResize()
+                      if (typingIdleRef.current) clearTimeout(typingIdleRef.current)
+                      typingIdleRef.current = setTimeout(() => setIsTyping(false), 1200)
+                    }}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter" && !event.shiftKey) {
+                        event.preventDefault()
+                        handleSend()
+                      }
+                    }}
+                    placeholder="Type a message..."
+                    rows={1}
+                    className="min-h-[44px] w-full resize-none rounded-2xl border border-border bg-background px-4 py-3 text-sm text-foreground shadow-sm outline-none focus-visible:ring-2 focus-visible:ring-rose-500"
+                  />
+                  <Button
+                    type="button"
+                    className="h-11 w-11 rounded-full"
+                    onClick={handleSend}
+                    aria-label="Send message"
+                  >
+                    <Send className="h-5 w-5" />
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </section>
+        </div>
+      </div>
+    </main>
+  )
+}
