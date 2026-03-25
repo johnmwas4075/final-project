@@ -24,20 +24,32 @@ export function Navbar() {
 
   const [selectedLocation, setSelectedLocation] = useState<string>("")
   const [bedrooms, setBedrooms] = useState<string>("")
-  const [month, setMonth] = useState<string>("")
+  const [minPrice, setMinPrice] = useState<string>("")
+  const [maxPrice, setMaxPrice] = useState<string>("")
   const [isFiltersOpen, setIsFiltersOpen] = useState(false)
+  const [focusTarget, setFocusTarget] = useState<"location" | "bedrooms" | "minPrice" | "maxPrice" | null>(null)
   const [isAuthed, setIsAuthed] = useState(false)
   const [firstName, setFirstName] = useState<string>("")
   const filtersRef = useRef<HTMLDivElement | null>(null)
+  const locationInputRef = useRef<HTMLInputElement | null>(null)
+  const bedroomsInputRef = useRef<HTMLInputElement | null>(null)
+  const minPriceInputRef = useRef<HTMLInputElement | null>(null)
+  const maxPriceInputRef = useRef<HTMLInputElement | null>(null)
 
   const performSearch = () => {
     const params = new URLSearchParams()
     if (selectedLocation.trim()) params.set("location", selectedLocation.trim())
     if (bedrooms.trim()) params.set("bedrooms", bedrooms.trim())
-    if (month.trim()) params.set("month", month.trim())
+    if (minPrice.trim()) params.set("minPrice", minPrice.trim())
+    if (maxPrice.trim()) params.set("maxPrice", maxPrice.trim())
     const next = params.toString()
     router.push(next ? `${pathname}?${next}` : pathname)
     setIsFiltersOpen(false)
+  }
+
+  const openFiltersAndFocus = (target: "location" | "bedrooms" | "price") => {
+    setIsFiltersOpen(true)
+    setFocusTarget(target === "price" ? "minPrice" : target)
   }
 
   const handleSearch = (event?: React.FormEvent) => {
@@ -78,14 +90,26 @@ export function Navbar() {
     if (!isMain) return
     const locationParam = searchParams.get("location") || ""
     const bedroomsParam = searchParams.get("bedrooms") || ""
-    const monthParam = searchParams.get("month") || ""
+    const minPriceParam = searchParams.get("minPrice") || ""
+    const maxPriceParam = searchParams.get("maxPrice") || ""
     setSelectedLocation(locationParam)
     setBedrooms(bedroomsParam)
-    setMonth(monthParam)
+    setMinPrice(minPriceParam)
+    setMaxPrice(maxPriceParam)
   }, [isMain, searchParams])
 
   useEffect(() => {
     if (!isFiltersOpen) return
+    const focusMap = {
+      location: locationInputRef,
+      bedrooms: bedroomsInputRef,
+      minPrice: minPriceInputRef,
+      maxPrice: maxPriceInputRef,
+    }
+    if (focusTarget) {
+      const ref = focusMap[focusTarget]
+      setTimeout(() => ref.current?.focus(), 0)
+    }
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as Node
       if (filtersRef.current && !filtersRef.current.contains(target)) {
@@ -94,7 +118,7 @@ export function Navbar() {
     }
     document.addEventListener("mousedown", handleClickOutside)
     return () => document.removeEventListener("mousedown", handleClickOutside)
-  }, [isFiltersOpen])
+  }, [isFiltersOpen, focusTarget])
 
   useEffect(() => {
     const authed = checkAuth()
@@ -114,59 +138,134 @@ export function Navbar() {
 
         {isMain && (
           <div className="hidden md:flex flex-col items-center" ref={filtersRef}>
-            <div className="my-1 flex w-full max-w-[980px] items-center rounded-full border border-border bg-background p-1 shadow-sm transition-colors hover:border-rose-500/60">
-              <button
-                type="button"
-                onClick={() => setIsFiltersOpen((open) => !open)}
-                className="flex-1 rounded-full px-4 py-2 text-left transition-colors hover:bg-muted"
-              >
-                <span className="block text-[10px] font-semibold uppercase tracking-wide text-foreground/80">
-                  Location
-                </span>
-                <span className="block text-sm font-medium text-muted-foreground">
-                  {selectedLocation || "Location"}
-                </span>
-              </button>
-
-              <div className="h-7 w-px bg-border" />
-
-              <button
-                type="button"
-                onClick={() => setIsFiltersOpen((open) => !open)}
-                className="flex-1 rounded-full px-4 py-2 text-left transition-colors hover:bg-muted"
-              >
-                <span className="block text-[10px] font-semibold uppercase tracking-wide text-foreground/80">
-                  Bedrooms
-                </span>
-                <span className="block text-sm font-medium text-muted-foreground">
-                  {bedrooms || "Any"}
-                </span>
-              </button>
-
-              <div className="h-7 w-px bg-border" />
-
-              <button
-                type="button"
-                onClick={() => setIsFiltersOpen((open) => !open)}
-                className="flex-1 rounded-full px-4 py-2 text-left transition-colors hover:bg-muted"
-              >
-                <span className="block text-[10px] font-semibold uppercase tracking-wide text-foreground/80">
-                  Month
-                </span>
-                <span className="block text-sm font-medium text-muted-foreground">
-                  {month || "Month"}
-                </span>
-              </button>
-
-              <Button
-                size="icon"
-                className="ml-1 h-10 w-10 rounded-full bg-rose-500 hover:bg-rose-600"
-                onClick={performSearch}
-              >
-                <Search className="h-5 w-5 text-white" />
-              </Button>
+            <div
+              className="my-1 w-full max-w-[1200px] rounded-full border border-border bg-background px-4 py-2 text-left shadow-sm transition-colors hover:border-rose-500/60"
+            >
+              <div className="grid grid-cols-3 gap-1">
+                <button
+                  type="button"
+                  onClick={(event) => {
+                    openFiltersAndFocus("location")
+                  }}
+                  className="rounded-full px-2 py-1 text-left transition-colors hover:bg-muted"
+                >
+                  <div className="text-[10px] font-semibold uppercase tracking-wide text-foreground/80">
+                    Location
+                  </div>
+                  <div className="text-sm font-medium text-muted-foreground">
+                    {selectedLocation || "Location"}
+                  </div>
+                </button>
+                <button
+                  type="button"
+                  onClick={(event) => {
+                    openFiltersAndFocus("bedrooms")
+                  }}
+                  className="rounded-full px-2 py-1 text-left transition-colors hover:bg-muted"
+                >
+                  <div className="text-[10px] font-semibold uppercase tracking-wide text-foreground/80">
+                    Bedrooms
+                  </div>
+                  <div className="text-sm font-medium text-muted-foreground">
+                    {bedrooms || "Any"}
+                  </div>
+                </button>
+                <button
+                  type="button"
+                  onClick={(event) => {
+                    openFiltersAndFocus("price")
+                  }}
+                  className="rounded-full px-2 py-1 text-left transition-colors hover:bg-muted"
+                >
+                  <div className="text-[10px] font-semibold uppercase tracking-wide text-foreground/80 whitespace-nowrap">
+                    Price range
+                  </div>
+                  <div className="text-sm font-medium text-muted-foreground">
+                    {minPrice || maxPrice ? `${minPrice || "0"} - ${maxPrice || "Any"}` : "Any"}
+                  </div>
+                </button>
+              </div>
             </div>
-          </div>
+            {isFiltersOpen && (
+              <div className="w-full">
+                <div className="mx-auto w-full max-w-[1200px] px-4 pb-3 sm:px-6 lg:px-8">
+                  <form
+                    onSubmit={handleSearch}
+                    className="mt-2 flex flex-wrap items-end gap-3 rounded-2xl border border-border bg-background px-4 py-3 shadow-sm"
+                  >
+                    <div className="flex min-w-[180px] flex-[0.7] flex-col gap-1">
+                      <label className="text-xs font-semibold uppercase tracking-wide text-foreground/70">
+                        Location
+                      </label>
+                      <input
+                        type="text"
+                        ref={locationInputRef}
+                        value={selectedLocation}
+                        onChange={(e) => setSelectedLocation(e.target.value)}
+                        placeholder="County, constituency, or ward"
+                        className="h-10 w-full rounded-md border border-border bg-background px-3 text-sm outline-none focus:border-rose-500/70"
+                      />
+                    </div>
+
+                  <div className="flex w-28 flex-col gap-1">
+                    <label className="text-xs font-semibold uppercase tracking-wide text-foreground/70">
+                      Bedrooms
+                    </label>
+                    <input
+                      type="number"
+                      min={0}
+                      ref={bedroomsInputRef}
+                      value={bedrooms}
+                      onChange={(e) => setBedrooms(e.target.value)}
+                      placeholder="Any"
+                      className="h-10 w-full rounded-md border border-border bg-background px-3 text-sm outline-none focus:border-rose-500/70"
+                    />
+                  </div>
+
+                  <div className="flex items-end gap-3">
+                    <div className="flex w-36 flex-col gap-1">
+                      <label className="text-xs font-semibold uppercase tracking-wide text-foreground/70">
+                        Min price
+                      </label>
+                      <input
+                        type="number"
+                        min={0}
+                        ref={minPriceInputRef}
+                        value={minPrice}
+                        onChange={(e) => setMinPrice(e.target.value)}
+                        placeholder="0"
+                        className="h-10 w-full rounded-md border border-border bg-background px-3 text-sm outline-none focus:border-rose-500/70"
+                      />
+                    </div>
+                    <div className="flex w-36 flex-col gap-1">
+                      <label className="text-xs font-semibold uppercase tracking-wide text-foreground/70">
+                        Max price
+                      </label>
+                      <input
+                        type="number"
+                        min={0}
+                        ref={maxPriceInputRef}
+                        value={maxPrice}
+                        onChange={(e) => setMaxPrice(e.target.value)}
+                        placeholder="Any"
+                        className="h-10 w-full rounded-md border border-border bg-background px-3 text-sm outline-none focus:border-rose-500/70"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-end">
+                    <Button
+                      type="submit"
+                      className="h-10 w-full rounded-full bg-rose-500 px-6 hover:bg-rose-600 sm:w-auto"
+                    >
+                      Search
+                    </Button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          )}
+        </div>
         )}
 
         {isMain && (
@@ -225,65 +324,7 @@ export function Navbar() {
         </div>
       </div>
 
-      {isMain && isFiltersOpen && (
-        <div className="hidden md:block">
-          <div className="mx-auto w-full max-w-7xl px-4 pb-3 sm:px-6 lg:px-8">
-            <form
-              onSubmit={handleSearch}
-              className="mt-2 grid grid-cols-1 gap-3 rounded-2xl border border-border bg-background px-4 py-3 shadow-sm sm:grid-cols-4 sm:items-end"
-            >
-              <div className="flex flex-col gap-1">
-                <label className="text-xs font-semibold uppercase tracking-wide text-foreground/70">
-                  Location
-                </label>
-                <input
-                  type="text"
-                  value={selectedLocation}
-                  onChange={(e) => setSelectedLocation(e.target.value)}
-                  placeholder="Where are you going?"
-                  className="h-10 w-full rounded-md border border-border bg-background px-3 text-sm outline-none focus:border-rose-500/70"
-                />
-              </div>
-
-              <div className="flex flex-col gap-1">
-                <label className="text-xs font-semibold uppercase tracking-wide text-foreground/70">
-                  Bedrooms
-                </label>
-                <input
-                  type="number"
-                  min={0}
-                  value={bedrooms}
-                  onChange={(e) => setBedrooms(e.target.value)}
-                  placeholder="Any"
-                  className="h-10 w-full rounded-md border border-border bg-background px-3 text-sm outline-none focus:border-rose-500/70"
-                />
-              </div>
-
-              <div className="flex flex-col gap-1">
-                <label className="text-xs font-semibold uppercase tracking-wide text-foreground/70">
-                  Month
-                </label>
-                <input
-                  type="text"
-                  value={month}
-                  onChange={(e) => setMonth(e.target.value)}
-                  placeholder="Month"
-                  className="h-10 w-full rounded-md border border-border bg-background px-3 text-sm outline-none focus:border-rose-500/70"
-                />
-              </div>
-
-              <div className="flex items-center justify-end">
-                <Button
-                  type="submit"
-                  className="h-10 w-full rounded-full bg-rose-500 px-6 hover:bg-rose-600 sm:w-auto"
-                >
-                  Search
-                </Button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+      {/* filters moved inside the main filter wrapper */}
     </header>
   )
 }
