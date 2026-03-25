@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server"
 import { getPrisma } from "@/lib/prisma"
+import { releaseBookingPayouts } from "@/lib/booking-payout"
 
 export const runtime = "nodejs"
 
@@ -20,6 +21,8 @@ export async function GET(request: Request) {
   if (!userId) {
     return NextResponse.json({ error: "userId is required" }, { status: 400 })
   }
+
+  await releaseBookingPayouts(prisma, userId)
 
   const transactions = await prisma.hostWalletTransaction.findMany({
     where: { userId },
