@@ -1,8 +1,7 @@
 import { NextResponse } from "next/server"
 import crypto from "node:crypto"
-import fs from "node:fs"
-import path from "node:path"
 import { Pool, neonConfig } from "@neondatabase/serverless"
+import { getDatabaseUrl } from "@/lib/database-url"
 
 export const runtime = "nodejs"
 
@@ -16,13 +15,10 @@ function verifyPassword(password: string, stored: string): boolean {
 }
 
 export async function POST(request: Request) {
-  const envPath = path.resolve(process.cwd(), ".env.local")
-  const envContent = fs.existsSync(envPath) ? fs.readFileSync(envPath, "utf8") : ""
-  const match = envContent.match(/^\s*DATABASE_URL\s*=\s*(.+)\s*$/m)
-  const databaseUrl = match ? match[1].trim().replace(/^['"]|['"]$/g, "") : ""
+  const databaseUrl = getDatabaseUrl()
   if (!databaseUrl) {
     return NextResponse.json(
-      { error: "Database not configured. Set DATABASE_URL in .env.local." },
+      { error: "Database not configured. Set DATABASE_URL." },
       { status: 500 }
     )
   }
