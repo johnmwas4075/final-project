@@ -36,6 +36,10 @@ export function Navbar() {
   const minPriceInputRef = useRef<HTMLInputElement | null>(null)
   const maxPriceInputRef = useRef<HTMLInputElement | null>(null)
 
+  const filtersActive = Boolean(
+    selectedLocation.trim() || bedrooms.trim() || minPrice.trim() || maxPrice.trim()
+  )
+
   const performSearch = () => {
     const params = new URLSearchParams()
     if (selectedLocation.trim()) params.set("location", selectedLocation.trim())
@@ -141,7 +145,7 @@ export function Navbar() {
   const filtersForm = (
     <form
       onSubmit={handleSearch}
-      className="mt-2 flex flex-wrap items-end gap-3 rounded-2xl border border-border bg-background px-4 py-3 shadow-sm"
+      className="mt-0 flex flex-wrap items-end gap-3 rounded-xl border border-border bg-background px-3 py-2 shadow-none"
     >
       <div className="flex min-w-[180px] flex-[0.7] flex-col gap-1">
         <label className="text-xs font-semibold uppercase tracking-wide text-foreground/70">
@@ -231,73 +235,60 @@ export function Navbar() {
 
         {isMain && (
           <div className="hidden md:flex flex-col items-center" ref={filtersRef}>
-            <div className="my-1 flex w-full max-w-[1200px] items-center gap-2 rounded-full border border-border bg-background px-4 py-2 text-left shadow-sm transition-colors hover:border-rose-500/60">
-              <div className="grid flex-1 grid-cols-3 gap-1">
-                <button
-                  type="button"
-                  onClick={() => openFiltersAndFocus("location")}
-                  className="rounded-full px-2 py-1 text-left transition-colors hover:bg-muted"
-                >
-                  <div className="text-[10px] font-semibold uppercase tracking-wide text-foreground/80">
-                    Location
-                  </div>
-                  <div className="text-sm font-medium text-muted-foreground">
-                    {selectedLocation || "Location"}
-                  </div>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => openFiltersAndFocus("bedrooms")}
-                  className="rounded-full px-2 py-1 text-left transition-colors hover:bg-muted"
-                >
-                  <div className="text-[10px] font-semibold uppercase tracking-wide text-foreground/80">
-                    Bedrooms
-                  </div>
-                  <div className="text-sm font-medium text-muted-foreground">
-                    {bedrooms || "Any"}
-                  </div>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => openFiltersAndFocus("price")}
-                  className="rounded-full px-2 py-1 text-left transition-colors hover:bg-muted"
-                >
-                  <div className="text-[10px] font-semibold uppercase tracking-wide text-foreground/80 whitespace-nowrap">
-                    Price range
-                  </div>
-                  <div className="text-sm font-medium text-muted-foreground">
-                    {minPrice || maxPrice ? `${minPrice || "0"} - ${maxPrice || "Any"}` : "Any"}
-                  </div>
-                </button>
-              </div>
-              {isFiltersOpen && (
-                <button
-                  type="button"
-                  onClick={clearFilters}
-                  className="flex h-8 w-8 items-center justify-center rounded-full border border-border bg-background text-sm text-muted-foreground shadow-sm hover:text-foreground"
-                  aria-label="Clear filters"
-                >
-                  ×
-                </button>
-              )}
-            </div>
-            {isFiltersOpen && (
-              <div className="w-full">
-                <div className="mx-auto w-full max-w-[1200px] px-4 pb-3 sm:px-6 lg:px-8">
-                  <div className="flex items-center justify-end">
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8 rounded-full"
-                      onClick={() => setIsFiltersOpen(false)}
-                      aria-label="Close filters"
-                    >
-                      ×
-                    </Button>
-                  </div>
-                  {filtersForm}
+            {!isFiltersOpen ? (
+              <div className="my-1 flex w-full max-w-[1200px] items-center gap-2 rounded-full border border-border bg-background px-4 py-2 text-left shadow-sm transition-colors hover:border-rose-500/60">
+                <div className="grid flex-1 grid-cols-3 gap-1">
+                  <button
+                    type="button"
+                    onClick={() => openFiltersAndFocus("location")}
+                    className="rounded-full px-2 py-1 text-left transition-colors hover:bg-muted"
+                  >
+                    <div className="text-[10px] font-semibold uppercase tracking-wide text-foreground/80">
+                      Location
+                    </div>
+                    <div className="text-sm font-medium text-muted-foreground">
+                      {selectedLocation || "Location"}
+                    </div>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => openFiltersAndFocus("bedrooms")}
+                    className="rounded-full px-2 py-1 text-left transition-colors hover:bg-muted"
+                  >
+                    <div className="text-[10px] font-semibold uppercase tracking-wide text-foreground/80">
+                      Bedrooms
+                    </div>
+                    <div className="text-sm font-medium text-muted-foreground">
+                      {bedrooms || "Any"}
+                    </div>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => openFiltersAndFocus("price")}
+                    className="rounded-full px-2 py-1 text-left transition-colors hover:bg-muted"
+                  >
+                    <div className="text-[10px] font-semibold uppercase tracking-wide text-foreground/80 whitespace-nowrap">
+                      Price range
+                    </div>
+                    <div className="text-sm font-medium text-muted-foreground">
+                      {minPrice || maxPrice ? `${minPrice || "0"} - ${maxPrice || "Any"}` : "Any"}
+                    </div>
+                  </button>
                 </div>
+                {filtersActive && (
+                  <button
+                    type="button"
+                    onClick={clearFilters}
+                    className="flex h-10 w-10 items-center justify-center rounded-full border border-border bg-background text-xl font-semibold text-muted-foreground shadow-sm hover:text-foreground"
+                    aria-label="Clear filters"
+                  >
+                    X
+                  </button>
+                )}
+              </div>
+            ) : (
+              <div className="mt-4 w-full max-w-[1200px]">
+                {filtersForm}
               </div>
             )}
           </div>
@@ -366,17 +357,17 @@ export function Navbar() {
 
       {isMain && isFiltersOpen && (
         <div className="md:hidden">
-          <div className="mx-auto w-full max-w-[1200px] px-4 pb-3 sm:px-6 lg:px-8">
+          <div className="mx-auto w-full max-w-[1200px] px-4 pb-1 sm:px-6 lg:px-8">
             <div className="flex items-center justify-end">
               <Button
                 type="button"
                 variant="ghost"
                 size="icon"
-                className="h-8 w-8 rounded-full"
+                className="h-10 w-10 rounded-full text-xl font-semibold"
                 onClick={() => setIsFiltersOpen(false)}
                 aria-label="Close filters"
               >
-                ×
+                X
               </Button>
             </div>
             {filtersForm}
@@ -386,3 +377,4 @@ export function Navbar() {
     </header>
   )
 }
+
