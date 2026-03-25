@@ -34,6 +34,9 @@ const AUTH_KEY = "authUserId"
 const AUTH_NAME_KEY = "authUserFirstName"
 const AUTH_PHONE_KEY = "authUserPhone"
 const AUTH_EMAIL_KEY = "authUserEmail"
+const AUTH_USERNAME_KEY = "authUserUsername"
+
+const PLATFORM_MPESA_NUMBER = "0703399867"
 
 type WrittenReview = {
   id: string
@@ -75,6 +78,7 @@ export default function UserPage() {
   const [isReviewModalOpen, setIsReviewModalOpen] = useState(false)
   const [isAddReviewModalOpen, setIsAddReviewModalOpen] = useState(false)
   const [userId, setUserId] = useState<string | null>(null)
+  const [username, setUsername] = useState<string | null>(null)
   const [writtenReviews, setWrittenReviews] = useState<WrittenReview[]>([])
   const [pendingReviews, setPendingReviews] = useState<PendingBooking[]>([])
   const [isReviewsLoading, setIsReviewsLoading] = useState(false)
@@ -103,6 +107,8 @@ export default function UserPage() {
   const [saveDepositPhone, setSaveDepositPhone] = useState(true)
   const [depositMethod, setDepositMethod] = useState<"mpesa" | "card" | "bank" | "paypal">("mpesa")
   const [depositStep, setDepositStep] = useState<"details" | "confirm" | "send" | "success">("details")
+  const [depositError, setDepositError] = useState("")
+  const [depositSubmitting, setDepositSubmitting] = useState(false)
   const [cardType, setCardType] = useState<"visa" | "mastercard">("visa")
   const [cardDetails, setCardDetails] = useState({
     number: "",
@@ -149,12 +155,14 @@ export default function UserPage() {
     }
     const storedPhone = window.localStorage.getItem(AUTH_PHONE_KEY)
     const storedEmail = window.localStorage.getItem(AUTH_EMAIL_KEY)
+    const storedUsername = window.localStorage.getItem(AUTH_USERNAME_KEY)
     if (storedPhone) {
       const sanitized = storedPhone.replace(/^\+254/, "").replace(/\s+/g, "")
       setDepositPhone(sanitized)
       setWithdrawPhone(sanitized)
     }
     if (storedEmail) setWalletReceiptEmail(storedEmail)
+    if (storedUsername) setUsername(storedUsername)
     setUserId(window.localStorage.getItem(AUTH_KEY))
     if (storedName) setFirstName(storedName)
     setIsReady(true)
@@ -1323,6 +1331,15 @@ export default function UserPage() {
                     <div className="rounded-lg border border-border bg-muted/20 p-4">
                       <p className="text-sm font-semibold text-foreground">Mpesa Details</p>
                       <div className="mt-3 space-y-3">
+                        <div className="rounded-md border border-border bg-background px-3 py-2 text-xs text-muted-foreground">
+                          Send to: <span className="font-medium text-foreground">{PLATFORM_MPESA_NUMBER}</span>
+                        </div>
+                        <div className="rounded-md border border-border bg-background px-3 py-2 text-xs text-muted-foreground">
+                          Receiver name:{" "}
+                          <span className="font-medium text-foreground">
+                            airbnb-{(username || "guest").replace(/^@/, "")}
+                          </span>
+                        </div>
                         <label className="text-sm text-muted-foreground">Phone Number</label>
                         <div className="flex items-center gap-2">
                           <span className="text-sm text-muted-foreground">+254</span>
@@ -1476,7 +1493,19 @@ export default function UserPage() {
                         </tr>
                         {depositMethod === "mpesa" && (
                           <tr>
-                            <td className="py-1 font-medium text-foreground">Phone</td>
+                            <td className="py-1 font-medium text-foreground">Send to</td>
+                            <td className="py-1 text-right">{PLATFORM_MPESA_NUMBER}</td>
+                          </tr>
+                        )}
+                        {depositMethod === "mpesa" && (
+                          <tr>
+                            <td className="py-1 font-medium text-foreground">Receiver</td>
+                            <td className="py-1 text-right">airbnb-{(username || "guest").replace(/^@/, "")}</td>
+                          </tr>
+                        )}
+                        {depositMethod === "mpesa" && (
+                          <tr>
+                            <td className="py-1 font-medium text-foreground">From</td>
                             <td className="py-1 text-right">+254 {depositPhone}</td>
                           </tr>
                         )}
@@ -1530,15 +1559,58 @@ export default function UserPage() {
                 <>
                   <div className="rounded-lg border border-border bg-background p-4 text-sm text-muted-foreground">
                     <p>Send STK push or transfer to complete payment.</p>
-                    {depositMethod === "mpesa" && <p>Phone: +254 {depositPhone}</p>}
+                    {depositMethod === "mpesa" && (
+                      <>
+                        <p>Send to: {PLATFORM_MPESA_NUMBER}</p>
+                        <p>Receiver: airbnb-{(username || "guest").replace(/^@/, "")}</p>
+                        <p>From: +254 {depositPhone}</p>
+                      </>
+                    )}
                     <p>Amount: KSh {depositAmount ? Number(depositAmount).toLocaleString() : "0"}</p>
                   </div>
+                  {depositError ? (
+                    <p className="text-sm text-destructive">{depositError}</p>
+                  ) : null}
                   <div className="flex justify-end gap-2">
                     <Button variant="outline" onClick={() => setDepositStep("confirm")}>
                       Back
                     </Button>
-                    <Button className="bg-rose-500 text-white hover:bg-rose-600" onClick={() => setDepositStep("success")}>
-                      Send STK and Deposit
+                    <Button
+                      className="bg-rose-500 text-white hover:bg-rose-600"
+                      disabled={depositSubmitting}
+                      onClick={async () => {
+                        if (depositMethod !== "mpesa") {
+                          setDepositStep("success")
+                          return
+                        }
+                        if (!userId) return
+                        setDepositSubmitting(true)
+                        setDepositError("")
+                        try {
+                          const response = await fetch("/api/payments/mpesa/stk", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({
+                              userId,
+                              phone: `254${depositPhone}`.replace(/\s+/g, ""),
+                              amount: Number(depositAmount),
+                              username: username || "",
+                            }),
+                          })
+                          const data = await response.json().catch(() => ({}))
+                          if (!response.ok) {
+                            setDepositError(data?.error || "Unable to send STK push.")
+                            return
+                          }
+                          setDepositStep("success")
+                        } catch {
+                          setDepositError("Unable to send STK push.")
+                        } finally {
+                          setDepositSubmitting(false)
+                        }
+                      }}
+                    >
+                      {depositSubmitting ? "Sending..." : "Send STK and Deposit"}
                     </Button>
                   </div>
                 </>
@@ -1547,7 +1619,7 @@ export default function UserPage() {
               {depositStep === "success" && (
                 <>
                   <div className="text-sm text-muted-foreground">
-                    <p className="font-medium text-foreground">Deposit Successful</p>
+                    <p className="font-medium text-foreground">STK push sent</p>
                     <table className="mt-3 w-full text-sm text-muted-foreground">
                       <tbody>
                         <tr>
@@ -1565,14 +1637,14 @@ export default function UserPage() {
                           <td className="py-1 text-right">Mar 30, 2025 14:23</td>
                         </tr>
                         <tr>
-                          <td className="py-1 font-medium text-foreground">New Balance</td>
-                          <td className="py-1 text-right">KSh 18,500</td>
+                          <td className="py-1 font-medium text-foreground">Status</td>
+                          <td className="py-1 text-right">Pending confirmation</td>
                         </tr>
                       </tbody>
                     </table>
                   </div>
                   <div className="mt-4 rounded-lg border border-border bg-muted/20 p-4 text-sm text-muted-foreground">
-                    <p>Receipt sent to: {walletReceiptEmail}</p>
+                    <p>Receiver name: airbnb-{(username || "guest").replace(/^@/, "")}</p>
                     <p>SMS sent to: +254 {depositPhone}</p>
                   </div>
                   <div className="mt-6 flex flex-wrap gap-2">

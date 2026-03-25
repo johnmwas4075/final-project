@@ -98,9 +98,9 @@ export async function POST(request: Request) {
     const platformFee = Math.round(subtotal * 0.12)
     const totalAmount = subtotal + platformFee
 
-    if (user.walletBalance < totalAmount) {
+    if (action === "book" && user.walletBalance < totalAmount) {
       return NextResponse.json(
-        { error: "Insufficient wallet balance for this reservation." },
+        { error: "Insufficient wallet balance for this booking." },
         { status: 400 }
       )
     }
@@ -211,7 +211,7 @@ export async function POST(request: Request) {
           where: { id: activeReservation.id },
           data: {
             status: "CONFIRMED",
-            paymentStatus: "COMPLETED",
+            paymentStatus: "PROCESSING",
             totalAmount,
             platformFee,
             hostPayout: subtotal,
@@ -226,7 +226,7 @@ export async function POST(request: Request) {
             checkOut,
             guests: Number.isFinite(guests) && guests > 0 ? guests : 1,
             status: "CONFIRMED",
-            paymentStatus: "COMPLETED",
+            paymentStatus: "PROCESSING",
             totalAmount,
             platformFee,
             hostPayout: subtotal,
@@ -246,7 +246,7 @@ export async function POST(request: Request) {
           role: "client",
           category: "booking",
           title: "Booking confirmed",
-          message: `Your booking for ${property.propertyName} is confirmed.`,
+          message: `Your booking for ${property.propertyName} is confirmed. Payment will be released to the host after checkout.`,
           bookingId: booking.id,
           propertyId,
         },
@@ -258,7 +258,7 @@ export async function POST(request: Request) {
           role: "host",
           category: "booking",
           title: "New booking",
-          message: `A guest booked ${property.propertyName}.`,
+          message: `A guest booked ${property.propertyName}. Payout will be released after checkout.`,
           bookingId: booking.id,
           propertyId,
         },

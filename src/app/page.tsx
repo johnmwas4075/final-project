@@ -10,6 +10,10 @@ interface PropertyCardData {
   name: string
   pricePerNight: number
   rating: number
+  bedrooms: number
+  countyName: string
+  constituencyName: string
+  wardName: string
 }
 
 interface LocationSectionData {
@@ -28,6 +32,9 @@ async function getLocationData(): Promise<LocationSectionData[]> {
         price: true,
         photos: true,
         countyName: true,
+        constituencyName: true,
+        wardName: true,
+        rooms: true,
         reviews: { select: { stars: true } },
       },
       orderBy: { createdAt: "desc" },
@@ -63,6 +70,10 @@ async function getLocationData(): Promise<LocationSectionData[]> {
         image: property.photos?.[0] || "/images/property.jpg",
         pricePerNight: Number(property.price) || 0,
         rating,
+        bedrooms: Number(property.rooms) || 0,
+        countyName: property.countyName ?? "",
+        constituencyName: property.constituencyName ?? "",
+        wardName: property.wardName ?? "",
       }
 
       if (!grouped.has(normalized)) {

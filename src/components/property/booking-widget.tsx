@@ -81,8 +81,8 @@ export function BookingWidget({
       return
     }
     if (!checkIn || !checkOut) return
-    if (walletBalance !== null && walletBalance < total) {
-      setErrorMessage("Insufficient wallet balance for this reservation.")
+    if (action === "book" && walletBalance !== null && walletBalance < total) {
+      setErrorMessage("Insufficient wallet balance for this booking.")
       return
     }
 
@@ -227,7 +227,7 @@ export function BookingWidget({
       {nights > 0 && (
         <>
           <p className="mt-4 text-center text-sm text-muted-foreground">
-            Wallet balance is checked before reserving or booking.
+            Wallet balance is required for booking. Reservations can be placed without funds.
           </p>
 
           <div className="mt-4 space-y-3">

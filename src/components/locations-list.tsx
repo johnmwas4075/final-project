@@ -1,8 +1,10 @@
 "use client"
 
-import { useState, useEffect, useRef, useCallback } from "react"
+import { useState, useEffect, useRef, useCallback, useMemo } from "react"
 import { LocationSection } from "@/components/location-section"
+import { PropertiesGrid } from "@/components/properties-grid"
 import { Spinner } from "@/components/ui/spinner"
+import { useSearchParams } from "next/navigation"
 
 interface Property {
   id: string
@@ -10,6 +12,10 @@ interface Property {
   name: string
   pricePerNight: number
   rating: number
+  bedrooms: number
+  countyName: string
+  constituencyName: string
+  wardName: string
 }
 
 interface LocationData {
@@ -31,8 +37,72 @@ export function LocationsList({
   const [visibleCount, setVisibleCount] = useState(initialCount)
   const [isLoading, setIsLoading] = useState(false)
   const loadMoreRef = useRef<HTMLDivElement>(null)
+  const searchParams = useSearchParams()
 
-  const hasMore = visibleCount < locations.length
+  const filters = useMemo(() => {
+    const location = (searchParams.get("location") || "").trim().toLowerCase()
+    const bedroomsRaw = (searchParams.get("bedrooms") || "").trim()
+    const minPriceRaw = (searchParams.get("minPrice") || "").trim()
+    const maxPriceRaw = (searchParams.get("maxPrice") || "").trim()
+    const bedrooms = bedroomsRaw ? Number(bedroomsRaw) : null
+    const minPrice = minPriceRaw ? Number(minPriceRaw) : null
+    const maxPrice = maxPriceRaw ? Number(maxPriceRaw) : null
+    return { location, bedrooms, minPrice, maxPrice }
+  }, [searchParams])
+
+  const filtersActive = Boolean(
+    filters.location ||
+      (Number.isFinite(filters.bedrooms as number) && (filters.bedrooms as number) > 0) ||
+      Number.isFinite(filters.minPrice as number) ||
+      Number.isFinite(filters.maxPrice as number)
+  )
+
+  const filteredLocations = useMemo(() => {
+    return locations
+      .map((locationData) => {
+        const filtered = locationData.properties.filter((property) => {
+          if (!filtersActive) return true
+
+          let matches = false
+
+          if (filters.location) {
+            const haystack = [
+              property.countyName,
+              property.constituencyName,
+              property.wardName,
+              locationData.location,
+            ]
+              .filter(Boolean)
+              .join(" ")
+              .toLowerCase()
+            if (haystack.includes(filters.location)) matches = true
+          }
+
+          if (Number.isFinite(filters.bedrooms as number) && (filters.bedrooms as number) > 0) {
+            if (property.bedrooms >= (filters.bedrooms as number)) matches = true
+          }
+
+          if (Number.isFinite(filters.minPrice as number)) {
+            if (property.pricePerNight >= (filters.minPrice as number)) matches = true
+          }
+
+          if (Number.isFinite(filters.maxPrice as number)) {
+            if (property.pricePerNight <= (filters.maxPrice as number)) matches = true
+          }
+
+          return matches
+        })
+
+        return { ...locationData, properties: filtered }
+      })
+      .filter((locationData) => locationData.properties.length > 0)
+  }, [locations, filters, filtersActive])
+
+  useEffect(() => {
+    setVisibleCount(initialCount)
+  }, [filters, initialCount])
+
+  const hasMore = visibleCount < filteredLocations.length
 
   const loadMore = useCallback(() => {
     if (isLoading || !hasMore) return
@@ -41,10 +111,10 @@ export function LocationsList({
     
     // Simulate a small loading delay for better UX
     setTimeout(() => {
-      setVisibleCount((prev) => Math.min(prev + loadMoreCount, locations.length))
+      setVisibleCount((prev) => Math.min(prev + loadMoreCount, filteredLocations.length))
       setIsLoading(false)
     }, 500)
-  }, [isLoading, hasMore, loadMoreCount, locations.length])
+  }, [isLoading, hasMore, loadMoreCount, filteredLocations.length])
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -73,19 +143,29 @@ export function LocationsList({
     }
   }, [hasMore, isLoading, loadMore])
 
-  const visibleLocations = locations.slice(0, visibleCount)
+  const visibleLocations = filteredLocations.slice(0, visibleCount)
+
+  const flatProperties = useMemo(() => {
+    return filteredLocations.flatMap((locationData) => locationData.properties)
+  }, [filteredLocations])
 
   return (
     <>
-      <div className="space-y-2 sm:space-y-0 sm:divide-y sm:divide-border">
-        {visibleLocations.map((locationData) => (
-          <LocationSection
-            key={locationData.location}
-            location={locationData.location}
-            properties={locationData.properties}
-          />
-        ))}
-      </div>
+      {!filtersActive && (
+        <div className="space-y-2 sm:space-y-0 sm:divide-y sm:divide-border">
+          {visibleLocations.map((locationData) => (
+            <LocationSection
+              key={locationData.location}
+              location={locationData.location}
+              properties={locationData.properties}
+            />
+          ))}
+        </div>
+      )}
+
+      {filtersActive && (
+        <PropertiesGrid properties={flatProperties} initialCount={20} loadMoreCount={20} />
+      )}
 
       {/* Load more trigger */}
       {hasMore && (
@@ -100,7 +180,7 @@ export function LocationsList({
             </div>
           ) : (
             <p className="text-sm text-muted-foreground">
-              Showing {visibleCount} of {locations.length} locations
+              Showing {visibleCount} of {filteredLocations.length} locations
             </p>
           )}
         </div>
@@ -110,7 +190,7 @@ export function LocationsList({
       {!hasMore && (
         <div className="flex items-center justify-center py-8">
           <p className="text-sm text-muted-foreground">
-            You've reached the end - {locations.length} locations
+            You've reached the end - {filteredLocations.length} locations
           </p>
         </div>
       )}

@@ -64,6 +64,8 @@ export default function MessagesPage() {
   const [role, setRole] = useState<MessageRole>("client")
   const [threads, setThreads] = useState<ThreadItem[]>([])
   const [threadsQuery, setThreadsQuery] = useState("")
+  const [hostUnreadTotal, setHostUnreadTotal] = useState(0)
+  const [clientUnreadTotal, setClientUnreadTotal] = useState(0)
   const [isAuthed, setIsAuthed] = useState(false)
   const [firstName, setFirstName] = useState<string>("")
   const [userId, setUserId] = useState<string | null>(null)
@@ -97,16 +99,18 @@ export default function MessagesPage() {
   useEffect(() => {
     if (!userId && !userEmail && !username) {
       setThreads([])
+      setHostUnreadTotal(0)
+      setClientUnreadTotal(0)
       return
     }
     let cancelled = false
 
-    const fetchThreads = async () => {
+    const fetchThreads = async (roleValue: MessageRole) => {
       const params = new URLSearchParams()
       if (userId) params.set("userId", userId)
       if (userEmail) params.set("email", userEmail)
       if (username) params.set("username", username)
-      params.set("role", role)
+      params.set("role", roleValue)
       const res = await fetch(`/api/messages/threads?${params.toString()}`)
       const data = await res.json()
       return Array.isArray(data.threads) ? data.threads : []
@@ -114,10 +118,24 @@ export default function MessagesPage() {
 
     const load = async () => {
       try {
-        const currentThreads = await fetchThreads()
-        if (!cancelled) setThreads(currentThreads)
+        const [hostThreads, clientThreads] = await Promise.all([
+          fetchThreads("host"),
+          fetchThreads("client"),
+        ])
+        if (cancelled) return
+        setHostUnreadTotal(
+          hostThreads.reduce((sum: number, thread: ThreadItem) => sum + (thread.unreadCount || 0), 0)
+        )
+        setClientUnreadTotal(
+          clientThreads.reduce((sum: number, thread: ThreadItem) => sum + (thread.unreadCount || 0), 0)
+        )
+        setThreads(role === "host" ? hostThreads : clientThreads)
       } catch {
-        if (!cancelled) setThreads([])
+        if (!cancelled) {
+          setThreads([])
+          setHostUnreadTotal(0)
+          setClientUnreadTotal(0)
+        }
       }
     }
 
@@ -173,6 +191,10 @@ export default function MessagesPage() {
     const nextRole: MessageRole = role === "host" ? "client" : "host"
     if (typeof window !== "undefined") {
       window.localStorage.setItem("messagesActiveRole", nextRole)
+    }
+    if (role !== "host" && nextRole === "host") {
+      router.push(`/host/verify?next=${encodeURIComponent("/messages")}`)
+      return
     }
     setRole(nextRole)
   }
@@ -404,7 +426,12 @@ export default function MessagesPage() {
 
             <div className="flex items-center gap-3">
               <Button variant="outline" className="rounded-full" onClick={switchInbox}>
-                {role === "host" ? "Client inbox" : "Host inbox"}
+                <span>{role === "host" ? "Client inbox" : "Host inbox"}</span>
+                {(role === "host" ? clientUnreadTotal : hostUnreadTotal) > 0 && (
+                  <span className="ml-2 inline-flex min-w-[1.25rem] items-center justify-center rounded-full bg-rose-500 px-2 py-0.5 text-[10px] font-semibold text-white">
+                    {role === "host" ? clientUnreadTotal : hostUnreadTotal}
+                  </span>
+                )}
               </Button>
               <div className="flex w-full max-w-md items-center rounded-full border border-border bg-background px-4 py-2 shadow-sm">
                 <input

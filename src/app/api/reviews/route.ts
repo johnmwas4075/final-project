@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server"
 import { getPrisma } from "@/lib/prisma"
+import { releaseBookingPayouts } from "@/lib/booking-payout"
 
 const toNumber = (value: unknown) => {
   const num = Number(value)
@@ -19,6 +20,8 @@ export async function GET(request: Request) {
   if (!userId) {
     return NextResponse.json({ error: "userId is required" }, { status: 400 })
   }
+
+  await releaseBookingPayouts(prisma)
 
   const [writtenReviews, pendingBookings] = await Promise.all([
     prisma.review.findMany({
