@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback, useMemo } from "react"
 import { LocationSection } from "@/components/location-section"
+import { PropertiesGrid } from "@/components/properties-grid"
 import { Spinner } from "@/components/ui/spinner"
 import { useSearchParams } from "next/navigation"
 
@@ -49,10 +50,21 @@ export function LocationsList({
     return { location, bedrooms, minPrice, maxPrice }
   }, [searchParams])
 
+  const filtersActive = Boolean(
+    filters.location ||
+      (Number.isFinite(filters.bedrooms as number) && (filters.bedrooms as number) > 0) ||
+      Number.isFinite(filters.minPrice as number) ||
+      Number.isFinite(filters.maxPrice as number)
+  )
+
   const filteredLocations = useMemo(() => {
     return locations
       .map((locationData) => {
         const filtered = locationData.properties.filter((property) => {
+          if (!filtersActive) return true
+
+          let matches = false
+
           if (filters.location) {
             const haystack = [
               property.countyName,
@@ -63,28 +75,28 @@ export function LocationsList({
               .filter(Boolean)
               .join(" ")
               .toLowerCase()
-            if (!haystack.includes(filters.location)) return false
+            if (haystack.includes(filters.location)) matches = true
           }
 
           if (Number.isFinite(filters.bedrooms as number) && (filters.bedrooms as number) > 0) {
-            if (property.bedrooms < (filters.bedrooms as number)) return false
+            if (property.bedrooms >= (filters.bedrooms as number)) matches = true
           }
 
           if (Number.isFinite(filters.minPrice as number)) {
-            if (property.pricePerNight < (filters.minPrice as number)) return false
+            if (property.pricePerNight >= (filters.minPrice as number)) matches = true
           }
 
           if (Number.isFinite(filters.maxPrice as number)) {
-            if (property.pricePerNight > (filters.maxPrice as number)) return false
+            if (property.pricePerNight <= (filters.maxPrice as number)) matches = true
           }
 
-          return true
+          return matches
         })
 
         return { ...locationData, properties: filtered }
       })
       .filter((locationData) => locationData.properties.length > 0)
-  }, [locations, filters])
+  }, [locations, filters, filtersActive])
 
   useEffect(() => {
     setVisibleCount(initialCount)
@@ -133,17 +145,27 @@ export function LocationsList({
 
   const visibleLocations = filteredLocations.slice(0, visibleCount)
 
+  const flatProperties = useMemo(() => {
+    return filteredLocations.flatMap((locationData) => locationData.properties)
+  }, [filteredLocations])
+
   return (
     <>
-      <div className="space-y-2 sm:space-y-0 sm:divide-y sm:divide-border">
-        {visibleLocations.map((locationData) => (
-          <LocationSection
-            key={locationData.location}
-            location={locationData.location}
-            properties={locationData.properties}
-          />
-        ))}
-      </div>
+      {!filtersActive && (
+        <div className="space-y-2 sm:space-y-0 sm:divide-y sm:divide-border">
+          {visibleLocations.map((locationData) => (
+            <LocationSection
+              key={locationData.location}
+              location={locationData.location}
+              properties={locationData.properties}
+            />
+          ))}
+        </div>
+      )}
+
+      {filtersActive && (
+        <PropertiesGrid properties={flatProperties} initialCount={20} loadMoreCount={20} />
+      )}
 
       {/* Load more trigger */}
       {hasMore && (

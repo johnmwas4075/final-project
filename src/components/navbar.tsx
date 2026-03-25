@@ -52,6 +52,15 @@ export function Navbar() {
     setFocusTarget(target === "price" ? "minPrice" : target)
   }
 
+  const clearFilters = () => {
+    setSelectedLocation("")
+    setBedrooms("")
+    setMinPrice("")
+    setMaxPrice("")
+    router.push(pathname)
+    setIsFiltersOpen(false)
+  }
+
   const handleSearch = (event?: React.FormEvent) => {
     if (event) event.preventDefault()
     performSearch()
@@ -129,6 +138,90 @@ export function Navbar() {
     }
   }, [pathname])
 
+  const filtersForm = (
+    <form
+      onSubmit={handleSearch}
+      className="mt-2 flex flex-wrap items-end gap-3 rounded-2xl border border-border bg-background px-4 py-3 shadow-sm"
+    >
+      <div className="flex min-w-[180px] flex-[0.7] flex-col gap-1">
+        <label className="text-xs font-semibold uppercase tracking-wide text-foreground/70">
+          Location
+        </label>
+        <input
+          type="text"
+          ref={locationInputRef}
+          value={selectedLocation}
+          onChange={(e) => setSelectedLocation(e.target.value)}
+          placeholder="County, constituency, or ward"
+          className="h-10 w-full rounded-md border border-border bg-background px-3 text-sm outline-none focus:border-rose-500/70"
+        />
+      </div>
+
+      <div className="flex w-28 flex-col gap-1">
+        <label className="text-xs font-semibold uppercase tracking-wide text-foreground/70">
+          Bedrooms
+        </label>
+        <input
+          type="number"
+          min={0}
+          ref={bedroomsInputRef}
+          value={bedrooms}
+          onChange={(e) => setBedrooms(e.target.value)}
+          placeholder="Any"
+          className="h-10 w-full rounded-md border border-border bg-background px-3 text-sm outline-none focus:border-rose-500/70"
+        />
+      </div>
+
+      <div className="flex items-end gap-3">
+        <div className="flex w-36 flex-col gap-1">
+          <label className="text-xs font-semibold uppercase tracking-wide text-foreground/70">
+            Min price
+          </label>
+          <input
+            type="number"
+            min={0}
+            ref={minPriceInputRef}
+            value={minPrice}
+            onChange={(e) => setMinPrice(e.target.value)}
+            placeholder="0"
+            className="h-10 w-full rounded-md border border-border bg-background px-3 text-sm outline-none focus:border-rose-500/70"
+          />
+        </div>
+        <div className="flex w-36 flex-col gap-1">
+          <label className="text-xs font-semibold uppercase tracking-wide text-foreground/70">
+            Max price
+          </label>
+          <input
+            type="number"
+            min={0}
+            ref={maxPriceInputRef}
+            value={maxPrice}
+            onChange={(e) => setMaxPrice(e.target.value)}
+            placeholder="Any"
+            className="h-10 w-full rounded-md border border-border bg-background px-3 text-sm outline-none focus:border-rose-500/70"
+          />
+        </div>
+      </div>
+
+      <div className="flex items-center justify-end gap-2">
+        <Button
+          type="button"
+          variant="outline"
+          className="h-10 shrink-0 rounded-full px-4"
+          onClick={clearFilters}
+        >
+          Cancel
+        </Button>
+        <Button
+          type="submit"
+          className="h-10 shrink-0 rounded-full bg-rose-500 px-6 hover:bg-rose-600"
+        >
+          Search
+        </Button>
+      </div>
+    </form>
+  )
+
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="mx-auto flex h-16 items-center justify-between px-4 sm:px-6 lg:px-8">
@@ -138,15 +231,11 @@ export function Navbar() {
 
         {isMain && (
           <div className="hidden md:flex flex-col items-center" ref={filtersRef}>
-            <div
-              className="my-1 w-full max-w-[1200px] rounded-full border border-border bg-background px-4 py-2 text-left shadow-sm transition-colors hover:border-rose-500/60"
-            >
-              <div className="grid grid-cols-3 gap-1">
+            <div className="my-1 flex w-full max-w-[1200px] items-center gap-2 rounded-full border border-border bg-background px-4 py-2 text-left shadow-sm transition-colors hover:border-rose-500/60">
+              <div className="grid flex-1 grid-cols-3 gap-1">
                 <button
                   type="button"
-                  onClick={(event) => {
-                    openFiltersAndFocus("location")
-                  }}
+                  onClick={() => openFiltersAndFocus("location")}
                   className="rounded-full px-2 py-1 text-left transition-colors hover:bg-muted"
                 >
                   <div className="text-[10px] font-semibold uppercase tracking-wide text-foreground/80">
@@ -158,9 +247,7 @@ export function Navbar() {
                 </button>
                 <button
                   type="button"
-                  onClick={(event) => {
-                    openFiltersAndFocus("bedrooms")
-                  }}
+                  onClick={() => openFiltersAndFocus("bedrooms")}
                   className="rounded-full px-2 py-1 text-left transition-colors hover:bg-muted"
                 >
                   <div className="text-[10px] font-semibold uppercase tracking-wide text-foreground/80">
@@ -172,9 +259,7 @@ export function Navbar() {
                 </button>
                 <button
                   type="button"
-                  onClick={(event) => {
-                    openFiltersAndFocus("price")
-                  }}
+                  onClick={() => openFiltersAndFocus("price")}
                   className="rounded-full px-2 py-1 text-left transition-colors hover:bg-muted"
                 >
                   <div className="text-[10px] font-semibold uppercase tracking-wide text-foreground/80 whitespace-nowrap">
@@ -185,91 +270,46 @@ export function Navbar() {
                   </div>
                 </button>
               </div>
+              {isFiltersOpen && (
+                <button
+                  type="button"
+                  onClick={clearFilters}
+                  className="flex h-8 w-8 items-center justify-center rounded-full border border-border bg-background text-sm text-muted-foreground shadow-sm hover:text-foreground"
+                  aria-label="Clear filters"
+                >
+                  ×
+                </button>
+              )}
             </div>
             {isFiltersOpen && (
               <div className="w-full">
                 <div className="mx-auto w-full max-w-[1200px] px-4 pb-3 sm:px-6 lg:px-8">
-                  <form
-                    onSubmit={handleSearch}
-                    className="mt-2 flex flex-wrap items-end gap-3 rounded-2xl border border-border bg-background px-4 py-3 shadow-sm"
-                  >
-                    <div className="flex min-w-[180px] flex-[0.7] flex-col gap-1">
-                      <label className="text-xs font-semibold uppercase tracking-wide text-foreground/70">
-                        Location
-                      </label>
-                      <input
-                        type="text"
-                        ref={locationInputRef}
-                        value={selectedLocation}
-                        onChange={(e) => setSelectedLocation(e.target.value)}
-                        placeholder="County, constituency, or ward"
-                        className="h-10 w-full rounded-md border border-border bg-background px-3 text-sm outline-none focus:border-rose-500/70"
-                      />
-                    </div>
-
-                  <div className="flex w-28 flex-col gap-1">
-                    <label className="text-xs font-semibold uppercase tracking-wide text-foreground/70">
-                      Bedrooms
-                    </label>
-                    <input
-                      type="number"
-                      min={0}
-                      ref={bedroomsInputRef}
-                      value={bedrooms}
-                      onChange={(e) => setBedrooms(e.target.value)}
-                      placeholder="Any"
-                      className="h-10 w-full rounded-md border border-border bg-background px-3 text-sm outline-none focus:border-rose-500/70"
-                    />
-                  </div>
-
-                  <div className="flex items-end gap-3">
-                    <div className="flex w-36 flex-col gap-1">
-                      <label className="text-xs font-semibold uppercase tracking-wide text-foreground/70">
-                        Min price
-                      </label>
-                      <input
-                        type="number"
-                        min={0}
-                        ref={minPriceInputRef}
-                        value={minPrice}
-                        onChange={(e) => setMinPrice(e.target.value)}
-                        placeholder="0"
-                        className="h-10 w-full rounded-md border border-border bg-background px-3 text-sm outline-none focus:border-rose-500/70"
-                      />
-                    </div>
-                    <div className="flex w-36 flex-col gap-1">
-                      <label className="text-xs font-semibold uppercase tracking-wide text-foreground/70">
-                        Max price
-                      </label>
-                      <input
-                        type="number"
-                        min={0}
-                        ref={maxPriceInputRef}
-                        value={maxPrice}
-                        onChange={(e) => setMaxPrice(e.target.value)}
-                        placeholder="Any"
-                        className="h-10 w-full rounded-md border border-border bg-background px-3 text-sm outline-none focus:border-rose-500/70"
-                      />
-                    </div>
-                  </div>
-
                   <div className="flex items-center justify-end">
                     <Button
-                      type="submit"
-                      className="h-10 w-full rounded-full bg-rose-500 px-6 hover:bg-rose-600 sm:w-auto"
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 rounded-full"
+                      onClick={() => setIsFiltersOpen(false)}
+                      aria-label="Close filters"
                     >
-                      Search
+                      ×
                     </Button>
                   </div>
-                </form>
+                  {filtersForm}
+                </div>
               </div>
-            </div>
-          )}
-        </div>
+            )}
+          </div>
         )}
 
         {isMain && (
-          <Button variant="outline" size="sm" className="md:hidden rounded-full gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            className="md:hidden rounded-full gap-2"
+            onClick={() => openFiltersAndFocus("location")}
+          >
             <Search className="h-4 w-4" />
             <span>Search</span>
           </Button>
@@ -324,7 +364,25 @@ export function Navbar() {
         </div>
       </div>
 
-      {/* filters moved inside the main filter wrapper */}
+      {isMain && isFiltersOpen && (
+        <div className="md:hidden">
+          <div className="mx-auto w-full max-w-[1200px] px-4 pb-3 sm:px-6 lg:px-8">
+            <div className="flex items-center justify-end">
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 rounded-full"
+                onClick={() => setIsFiltersOpen(false)}
+                aria-label="Close filters"
+              >
+                ×
+              </Button>
+            </div>
+            {filtersForm}
+          </div>
+        </div>
+      )}
     </header>
   )
 }
