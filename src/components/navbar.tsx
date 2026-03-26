@@ -31,6 +31,7 @@ export function Navbar() {
   const [isAuthed, setIsAuthed] = useState(false)
   const [firstName, setFirstName] = useState<string>("")
   const filtersRef = useRef<HTMLDivElement | null>(null)
+  const mobileFiltersRef = useRef<HTMLDivElement | null>(null)
   const locationInputRef = useRef<HTMLInputElement | null>(null)
   const bedroomsInputRef = useRef<HTMLInputElement | null>(null)
   const minPriceInputRef = useRef<HTMLInputElement | null>(null)
@@ -125,9 +126,9 @@ export function Navbar() {
     }
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as Node
-      if (filtersRef.current && !filtersRef.current.contains(target)) {
-        setIsFiltersOpen(false)
-      }
+      const insideDesktop = filtersRef.current?.contains(target)
+      const insideMobile = mobileFiltersRef.current?.contains(target)
+      if (!insideDesktop && !insideMobile) setIsFiltersOpen(false)
     }
     document.addEventListener("mousedown", handleClickOutside)
     return () => document.removeEventListener("mousedown", handleClickOutside)
@@ -356,7 +357,7 @@ export function Navbar() {
       </div>
 
       {isMain && isFiltersOpen && (
-        <div className="md:hidden">
+        <div className="md:hidden" ref={mobileFiltersRef}>
           <div className="mx-auto w-full max-w-[1200px] px-4 pb-1 sm:px-6 lg:px-8">
             <div className="flex items-center justify-end">
               <Button
