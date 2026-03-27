@@ -252,7 +252,7 @@ export default function HostAirbnbsCalendarPage() {
       <div className="mx-auto w-full max-w-6xl px-4 py-8 sm:px-6">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-semibold text-foreground">Airbnb Calendars</h1>
+            <h1 className="text-2xl font-semibold text-foreground">Dwellify Calendars</h1>
             <p className="mt-2 text-sm text-muted-foreground">Check booking status for each listing.</p>
           </div>
           <Button variant="outline" onClick={() => router.push("/host")}>
@@ -458,7 +458,7 @@ export default function HostAirbnbsCalendarPage() {
               <div>
                 <h3 className="text-lg font-semibold text-foreground">Request Cancellation</h3>
                 <p className="text-sm text-muted-foreground">
-                  Provide a reason and optionally suggest another Airbnb.
+                  Provide a reason and optionally Suggest another listing.
                 </p>
               </div>
               <Button variant="outline" size="sm" onClick={() => setIsCancelModalOpen(false)}>
@@ -477,7 +477,7 @@ export default function HostAirbnbsCalendarPage() {
                 />
               </div>
               <div>
-                <label className="text-sm font-medium text-foreground">Suggest another Airbnb (optional)</label>
+                <label className="text-sm font-medium text-foreground">Suggest another listing (optional)</label>
                 <select
                   value={cancelSuggestion}
                   onChange={(event) => setCancelSuggestion(event.target.value)}
@@ -505,3 +505,4 @@ export default function HostAirbnbsCalendarPage() {
     </main>
   )
 }
+

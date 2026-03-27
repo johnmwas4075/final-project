@@ -17,3 +17,4 @@ export function NavbarWrapper() {
   }
   return <Suspense fallback={<div>Loading...</div>}><Navbar /></Suspense>
 }
+

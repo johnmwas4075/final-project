@@ -41,7 +41,7 @@ export function LocationSection({ location, properties }: LocationSectionProps) 
           className="group flex items-center gap-2 transition-colors hover:text-primary"
         >
           <h2 className="text-base sm:text-xl font-semibold text-foreground group-hover:text-primary">
-            Airbnbs in {location}
+            Dwellify stays in {location}
           </h2>
           <ChevronRight className="h-4 w-4 sm:h-5 sm:w-5 text-muted-foreground transition-transform group-hover:translate-x-1 group-hover:text-primary" />
         </Link>
@@ -105,3 +105,4 @@ export function LocationSection({ location, properties }: LocationSectionProps) 
     </section>
   )
 }
+

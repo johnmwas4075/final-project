@@ -763,7 +763,7 @@ export default function HostPage() {
       <header className="sticky top-0 z-40 w-full border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="mx-auto flex h-16 items-center justify-between px-4 sm:px-6 lg:px-8">
           <div className="flex items-center gap-3">
-            <span className="text-xl font-bold text-rose-500">airbnb</span>
+            <span className="text-xl font-bold text-rose-500 font-brand">Dwellify</span>
           </div>
 
           <div className="flex items-center gap-3">
@@ -804,7 +804,7 @@ export default function HostPage() {
                       className="w-full justify-start rounded-md px-3 py-2 text-sm"
                       onClick={() => setActiveSection("airbnbs")}
                     >
-                      My Airbnbs
+                      My Dwellify listings
                     </Button>
                   </SheetClose>
                   <SheetClose asChild>
@@ -933,7 +933,7 @@ export default function HostPage() {
                     : "text-muted-foreground hover:bg-muted hover:text-foreground"
                 }`}
               >
-                My Airbnbs
+                My Dwellify listings
               </button>
               <div className="my-2 border-b border-border" />
               <button 
@@ -1068,7 +1068,7 @@ export default function HostPage() {
 
             {activeSection === "airbnbs" && (
               <div>
-                <h2 className="text-2xl font-semibold text-foreground">My Airbnbs</h2>
+                <h2 className="text-2xl font-semibold text-foreground">My Dwellify listings</h2>
                 <p className="mt-4 text-muted-foreground">Manage your current listings.</p>
 
                 <div className="mt-6 flex flex-wrap items-center justify-between gap-3">
@@ -1077,7 +1077,7 @@ export default function HostPage() {
                     className="bg-rose-500 text-white hover:bg-rose-600"
                     onClick={() => router.push("/host/add")}
                   >
-                    Add Airbnb
+                    Add listing
                   </Button>
                 </div>
 
@@ -1530,7 +1530,7 @@ export default function HostPage() {
                     className="bg-rose-500 text-white hover:bg-rose-600"
                     onClick={() => router.push("/host/airbnbs")}
                   >
-                    Check Airbnbs
+                    Check listings
                   </Button>
                 </div>
 
@@ -2073,3 +2073,4 @@ export default function HostPage() {
     </main>
   )
 }
+

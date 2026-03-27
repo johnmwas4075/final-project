@@ -73,3 +73,4 @@ export function Reviews({ reviews, totalReviews }: ReviewsProps) {
     </div>
   )
 }
+

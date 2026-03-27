@@ -395,7 +395,7 @@ export default function UserPage() {
       <header className="sticky top-0 z-40 w-full border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="mx-auto flex h-16 items-center justify-between px-4 sm:px-6 lg:px-8">
           <div className="flex items-center gap-3">
-            <span className="text-xl font-bold text-rose-500">airbnb</span>
+            <span className="text-xl font-bold text-rose-500 font-brand">Dwellify</span>
           </div>
 
           <div className="flex items-center gap-3">
@@ -611,7 +611,7 @@ export default function UserPage() {
                 <div className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
                   <div className="rounded-lg border border-border bg-card p-4">
                     <h3 className="font-semibold text-foreground">Current Balance</h3>
-                    <p className="mt-2 text-3xl font-bold text-rose-500">$0.00</p>
+                    <p className="mt-2 text-3xl font-bold text-rose-500">Ksh 0.00</p>
                     <p className="mt-1 text-sm text-muted-foreground">Available to spend on upcoming trips.</p>
                   </div>
                   <div className="rounded-lg border border-border bg-card p-4">
@@ -955,17 +955,17 @@ export default function UserPage() {
                 <div className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-3">
                   <div className="rounded-lg border border-border bg-card p-4">
                     <h3 className="font-semibold text-foreground">Current Balance</h3>
-                    <p className="mt-2 text-3xl font-bold text-rose-500">$0.00</p>
+                    <p className="mt-2 text-3xl font-bold text-rose-500">Ksh 0.00</p>
                     <p className="mt-1 text-sm text-muted-foreground">Available to withdraw.</p>
                   </div>
                   <div className="rounded-lg border border-border bg-card p-4">
                     <h3 className="font-semibold text-foreground">Total Deposited</h3>
-                    <p className="mt-2 text-3xl font-bold text-rose-500">$0.00</p>
+                    <p className="mt-2 text-3xl font-bold text-rose-500">Ksh 0.00</p>
                     <p className="mt-1 text-sm text-muted-foreground">All time deposits.</p>
                   </div>
                   <div className="rounded-lg border border-border bg-card p-4">
                     <h3 className="font-semibold text-foreground">Total Withdrawn</h3>
-                    <p className="mt-2 text-3xl font-bold text-rose-500">$0.00</p>
+                    <p className="mt-2 text-3xl font-bold text-rose-500">Ksh 0.00</p>
                     <p className="mt-1 text-sm text-muted-foreground">All time withdrawals.</p>
                   </div>
                 </div>
@@ -1037,7 +1037,7 @@ export default function UserPage() {
                         <tr className="border-b border-border">
                           <td className="px-4 py-3 text-muted-foreground">Deposit</td>
                           <td className="px-4 py-3 text-muted-foreground whitespace-nowrap">Mar 12, 2026</td>
-                          <td className="px-4 py-3 text-muted-foreground">$100.00</td>
+                          <td className="px-4 py-3 text-muted-foreground">Ksh 100.00</td>
                           <td className="px-4 py-3 text-muted-foreground">Completed</td>
                         </tr>
                       </tbody>
@@ -1273,7 +1273,7 @@ export default function UserPage() {
             <div className="flex items-start justify-between gap-4">
               <div>
                 <h3 className="text-lg font-semibold text-foreground">Deposit Funds</h3>
-                <p className="text-sm text-muted-foreground">Deposit into your Airbnb balance.</p>
+                <p className="text-sm text-muted-foreground">Deposit into your Dwellify balance.</p>
               </div>
               <Button variant="outline" size="sm" onClick={() => setIsDepositModalOpen(false)}>
                 Close
@@ -1337,7 +1337,7 @@ export default function UserPage() {
                         <div className="rounded-md border border-border bg-background px-3 py-2 text-xs text-muted-foreground">
                           Receiver name:{" "}
                           <span className="font-medium text-foreground">
-                            airbnb-{(username || "guest").replace(/^@/, "")}
+                            dwellify-{(username || "guest").replace(/^@/, "")}
                           </span>
                         </div>
                         <label className="text-sm text-muted-foreground">Phone Number</label>
@@ -1500,7 +1500,7 @@ export default function UserPage() {
                         {depositMethod === "mpesa" && (
                           <tr>
                             <td className="py-1 font-medium text-foreground">Receiver</td>
-                            <td className="py-1 text-right">airbnb-{(username || "guest").replace(/^@/, "")}</td>
+                            <td className="py-1 text-right">dwellify-{(username || "guest").replace(/^@/, "")}</td>
                           </tr>
                         )}
                         {depositMethod === "mpesa" && (
@@ -1562,7 +1562,7 @@ export default function UserPage() {
                     {depositMethod === "mpesa" && (
                       <>
                         <p>Send to: {PLATFORM_MPESA_NUMBER}</p>
-                        <p>Receiver: airbnb-{(username || "guest").replace(/^@/, "")}</p>
+                        <p>Receiver: dwellify-{(username || "guest").replace(/^@/, "")}</p>
                         <p>From: +254 {depositPhone}</p>
                       </>
                     )}
@@ -1644,7 +1644,7 @@ export default function UserPage() {
                     </table>
                   </div>
                   <div className="mt-4 rounded-lg border border-border bg-muted/20 p-4 text-sm text-muted-foreground">
-                    <p>Receiver name: airbnb-{(username || "guest").replace(/^@/, "")}</p>
+                    <p>Receiver name: dwellify-{(username || "guest").replace(/^@/, "")}</p>
                     <p>SMS sent to: +254 {depositPhone}</p>
                   </div>
                   <div className="mt-6 flex flex-wrap gap-2">
@@ -1875,3 +1875,4 @@ export default function UserPage() {
     </main>
   )
 }
+

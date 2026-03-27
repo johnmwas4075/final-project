@@ -70,3 +70,4 @@ export function NotificationBell({ role, className, href, onClick }: Notificatio
     </Button>
   )
 }
+

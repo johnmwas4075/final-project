@@ -88,3 +88,4 @@ export function Amenities({ amenities = allAmenities }: AmenitiesProps) {
     </div>
   )
 }
+

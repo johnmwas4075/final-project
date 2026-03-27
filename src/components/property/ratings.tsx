@@ -39,3 +39,4 @@ export function Ratings({ overallRating, reviewCount, categories }: RatingsProps
     </div>
   )
 }
+

@@ -96,7 +96,7 @@ export default async function Home() {
   return (
     <main className="min-h-screen bg-background">
       <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 sm:py-8 lg:max-w-[95vw] lg:px-4">
-        <h1 className="mb-2 text-2xl sm:text-3xl font-bold text-foreground">Discover Airbnbs in Kenya</h1>
+        <h1 className="mb-2 text-2xl sm:text-3xl font-bold text-foreground">Discover Dwellify stays in Kenya</h1>
         <p className="mb-4 sm:mb-6 text-sm sm:text-base text-muted-foreground">
           Explore unique stays across {allLocations.length} locations
         </p>
@@ -111,3 +111,4 @@ export default async function Home() {
     </main>
   )
 }
+

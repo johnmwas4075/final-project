@@ -124,6 +124,10 @@
   }
 }
 
+.font-brand {
+  font-family: var(--font-brand);
+}
+
 /* Hide scrollbar for horizontal scroll containers */
 .scrollbar-hide {
   -ms-overflow-style: none;

@@ -34,3 +34,4 @@ export function Description({ description, maxLength = 300 }: DescriptionProps) 
     </div>
   )
 }
+

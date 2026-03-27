@@ -36,6 +36,7 @@ model User {
   hostThreads        MessageThread[]     @relation("HostThreads")
   guestThreads       MessageThread[]     @relation("GuestThreads")
   notifications      Notification[]
+  chatbotMessages    ChatbotMessage[]
 
   @@map("user")
 }
@@ -339,6 +340,11 @@ enum BookingStatus {
   COMPLETED
 }
 
+enum ChatbotRole {
+  USER
+  BOT
+}
+
 model MessageThread {
   id            String   @id @default(dbgenerated("gen_random_uuid()"))
   hostId        String
@@ -375,6 +381,20 @@ model Message {
   @@index([receiverId])
   @@index([createdAt])
   @@map("messages")
+}
+
+model ChatbotMessage {
+  id        String      @id @default(dbgenerated("gen_random_uuid()"))
+  userId    String      @map("userId")
+  role      ChatbotRole
+  content   String
+  createdAt DateTime    @default(now()) @map("createdAt") @db.Timestamp(6)
+
+  user      User        @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([createdAt])
+  @@map("chatbot_messages")
 }
 
 model Notification {

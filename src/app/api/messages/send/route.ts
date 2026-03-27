@@ -71,3 +71,4 @@ export async function POST(request: Request) {
 
   return NextResponse.json({ thread: result.thread, message: result.message })
 }
+

@@ -101,7 +101,7 @@ export default async function LocationPage({
           Back to all locations
         </Link>
 
-        <h1 className="mb-2 text-3xl font-bold text-foreground">Airbnbs in {displayLocation}</h1>
+        <h1 className="mb-2 text-3xl font-bold text-foreground">Dwellify stays in {displayLocation}</h1>
         <p className="mb-8 text-muted-foreground">
           Discover {properties.length} unique stays in {displayLocation}
         </p>

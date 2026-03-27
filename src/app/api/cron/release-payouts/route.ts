@@ -24,3 +24,4 @@ export async function GET(request: Request) {
   const released = await releaseBookingPayouts(prisma)
   return NextResponse.json({ ok: true, released })
 }
+

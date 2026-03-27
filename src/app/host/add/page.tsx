@@ -22,7 +22,7 @@ const HOST_SECTION_KEY = "hostActiveSection"
 
 const hostSidebarNav = [
   { label: "Dashboard", section: "dashboard" },
-  { label: "My Airbnbs", section: "airbnbs" },
+  { label: "My Dwellify listings", section: "airbnbs" },
   { label: "Availability Dates", section: "availability" },
   { label: "Earnings and Finances", section: "earnings" },
   { label: "Bookings and Management", section: "bookings" },
@@ -164,7 +164,7 @@ export default function HostAddPage() {
       <header className="sticky top-0 z-40 w-full border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="mx-auto flex h-16 items-center justify-between px-4 sm:px-6 lg:px-8">
           <div className="flex items-center gap-3">
-            <span className="text-xl font-bold text-rose-500">airbnb</span>
+            <span className="text-xl font-bold text-rose-500 font-brand">Dwellify</span>
           </div>
 
           <div className="flex items-center gap-3">
@@ -198,7 +198,7 @@ export default function HostAddPage() {
                       className="w-full justify-start rounded-md px-3 py-2 text-sm"
                       onClick={() => router.push("/host/airbnbs")}
                     >
-                      Check Airbnbs
+                      Check listings
                     </Button>
                   </SheetClose>
                   <SheetClose asChild>
@@ -251,7 +251,7 @@ export default function HostAddPage() {
           <section className="flex min-w-0 flex-1 flex-col gap-6 bg-background p-6 overflow-y-auto">
             <div className="w-full max-w-3xl">
               <div className="space-y-2">
-                <h1 className="text-3xl font-semibold text-foreground">Add a new Airbnb</h1>
+                <h1 className="text-3xl font-semibold text-foreground">Add a new listing</h1>
                 <p className="text-sm text-muted-foreground">Fill out the details to create a new listing.</p>
               </div>
 
@@ -354,7 +354,7 @@ export default function HostAddPage() {
                     Cancel
                   </Button>
                   <Button className="bg-rose-500 text-white hover:bg-rose-600" type="submit" disabled={isSubmitting}>
-                    {isSubmitting ? "Creating..." : "Create Airbnb"}
+                    {isSubmitting ? "Creating..." : "Create listing"}
                   </Button>
                 </div>
               </form>
@@ -365,3 +365,4 @@ export default function HostAddPage() {
     </main>
   )
 }
+

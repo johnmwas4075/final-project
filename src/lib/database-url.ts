@@ -12,3 +12,4 @@ export const getDatabaseUrl = () => {
   }
   return read(envLocal) || read(envDefault) || String(process.env.DATABASE_URL || "").trim()
 }
+

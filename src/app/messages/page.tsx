@@ -31,7 +31,7 @@ const AUTH_USERNAME_KEY = "authUserUsername"
 
 const hostSidebarNav = [
   { label: "Dashboard", section: "dashboard" },
-  { label: "My Airbnbs", section: "airbnbs" },
+  { label: "My Dwellify listings", section: "airbnbs" },
   { label: "Availability Dates", section: "availability" },
   { label: "Earnings and Finances", section: "earnings" },
   { label: "Bookings and Management", section: "bookings" },
@@ -290,7 +290,7 @@ export default function MessagesPage() {
 
           <div className="hidden w-full items-center justify-between md:flex">
             <div className="flex items-center gap-3">
-              <span className="text-xl font-bold text-rose-500">airbnb</span>
+              <span className="text-xl font-bold text-rose-500 font-brand">Dwellify</span>
             </div>
 
             <div className="flex items-center gap-3">
@@ -490,3 +490,4 @@ export default function MessagesPage() {
     </main>
   )
 }
+

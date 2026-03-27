@@ -27,3 +27,4 @@ export async function GET(request: Request) {
 
   return NextResponse.json({ unreadThreads: threads.length })
 }
+

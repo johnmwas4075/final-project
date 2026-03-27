@@ -7,6 +7,8 @@ export type NotificationItem = {
   message: string
   createdAt: string
   category: "checkin" | "checkout" | "payment" | "review"
+  bookingId?: string
+  propertyId?: string
 }
 
 const ACTIVE_ROLE_KEY = "notificationsActiveRole"
@@ -136,3 +138,4 @@ export const getUnreadCount = (role: NotificationRole) => {
   const readIds = new Set(getReadNotificationIds(role))
   return getNotificationsForRole(role).filter((item) => !readIds.has(item.id)).length
 }
+

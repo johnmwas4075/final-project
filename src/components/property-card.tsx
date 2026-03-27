@@ -56,3 +56,4 @@ export function PropertyCard({ id, image, name, pricePerNight, rating }: Propert
 
   return <div className="group w-full cursor-pointer">{content}</div>
 }
+

@@ -86,3 +86,4 @@ export const releaseBookingPayouts = async (prisma: PrismaClient, hostId?: strin
 
   return eligible.length
 }
+

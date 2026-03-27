@@ -182,3 +182,4 @@ export function getPrisma(): PrismaClient | null {
 
   return globalForPrisma.prisma ?? null
 }
+

@@ -118,3 +118,4 @@ export const getActiveMessageRole = (): MessageRole | null => {
   if (stored === "host" || stored === "client") return stored
   return null
 }
+

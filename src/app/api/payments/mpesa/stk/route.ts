@@ -110,7 +110,7 @@ export async function POST(request: Request) {
       PhoneNumber: normalizedPhone,
       CallBackURL: mpesaConfig.callbackUrl,
       AccountReference: reference,
-      TransactionDesc: "Airbnb wallet top up",
+      TransactionDesc: "Dwellify wallet top up",
     }),
   })
 
@@ -148,3 +148,4 @@ export async function POST(request: Request) {
     message: stkData.CustomerMessage || "STK push sent.",
   })
 }
+

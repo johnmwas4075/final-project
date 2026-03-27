@@ -28,7 +28,7 @@ const HOST_SECTION_KEY = "hostActiveSection"
 
 const hostNavItems = [
   { label: "Dashboard", section: "dashboard" },
-  { label: "My Airbnbs", section: "airbnbs" },
+  { label: "My Dwellify listings", section: "airbnbs" },
   { label: "Availability Dates", section: "availability" },
   { label: "Earnings and Finances", section: "earnings" },
   { label: "Bookings and Management", section: "bookings" },
@@ -65,7 +65,7 @@ export function HostNavbar() {
     <header className="sticky top-0 z-40 w-full border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="mx-auto flex h-16 items-center justify-between px-4 sm:px-6 lg:px-8">
         <div className="flex items-center gap-3">
-          <span className="text-xl font-bold text-rose-500">airbnb</span>
+          <span className="text-xl font-bold text-rose-500 font-brand">Dwellify</span>
         </div>
 
         <div className="flex items-center gap-3">
@@ -155,3 +155,4 @@ export function HostNavbar() {
     </header>
   )
 }
+

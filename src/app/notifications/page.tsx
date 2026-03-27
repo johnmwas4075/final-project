@@ -25,6 +25,7 @@ import {
 import { getActiveMessageRole } from "@/lib/messages"
 import {
   NotificationRole,
+  NotificationItem,
   getActiveNotificationRole,
   getNotificationsForRole,
   getReadNotificationIds,
@@ -37,7 +38,7 @@ const AUTH_NAME_KEY = "authUserFirstName"
 
 const hostSidebarNav = [
   { label: "Dashboard", section: "dashboard" },
-  { label: "My Airbnbs", section: "airbnbs" },
+  { label: "My Dwellify listings", section: "airbnbs" },
   { label: "Availability Dates", section: "availability" },
   { label: "Earnings and Finances", section: "earnings" },
   { label: "Bookings and Management", section: "bookings" },
@@ -138,6 +139,23 @@ export default function NotificationsPage() {
     setReadIds(getReadNotificationIds(role))
   }
 
+  const handleNotificationClick = (item: NotificationItem) => {
+    handleMarkRead(item.id)
+    if (item.propertyId) {
+      router.push(`/property/${item.propertyId}`)
+      return
+    }
+    const section =
+      item.category === "payment"
+        ? role === "host"
+          ? "earnings"
+          : "payments"
+        : item.category === "review"
+          ? "reviews"
+          : "bookings"
+    handleNavigate(section)
+  }
+
   const formatTimestamp = (value: string) => {
     const date = new Date(value)
     if (Number.isNaN(date.getTime())) return value
@@ -235,7 +253,7 @@ export default function NotificationsPage() {
 
           <div className="hidden w-full items-center justify-between md:flex">
             <div className="flex items-center gap-3">
-              <span className="text-xl font-bold text-rose-500">airbnb</span>
+              <span className="text-xl font-bold text-rose-500 font-brand">Dwellify</span>
             </div>
 
             <div className="flex items-center gap-3">
@@ -383,11 +401,11 @@ export default function NotificationsPage() {
                   key={item.id}
                   role="button"
                   tabIndex={0}
-                  onClick={() => handleMarkRead(item.id)}
+                  onClick={() => handleNotificationClick(item)}
                   onKeyDown={(event) => {
                     if (event.key === "Enter" || event.key === " ") {
                       event.preventDefault()
-                      handleMarkRead(item.id)
+                      handleNotificationClick(item)
                     }
                   }}
                   className={`rounded-xl border border-border p-4 shadow-sm transition-colors ${
@@ -435,3 +453,4 @@ export default function NotificationsPage() {
     </main>
   )
 }
+

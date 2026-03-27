@@ -68,7 +68,8 @@ export const encodePassword = (shortCode: string, passkey: string, timestamp: st
 
 export const createMpesaReference = (username?: string | null) => {
   const safe = String(username || "guest").replace(/[^a-zA-Z0-9._-]/g, "")
-  return `airbnb-${safe.startsWith("@") ? safe.slice(1) : safe}`
+  return `dwellify-${safe.startsWith("@") ? safe.slice(1) : safe}`
 }
 
 export const randomRef = () => crypto.randomBytes(10).toString("hex")
+
