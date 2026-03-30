@@ -226,9 +226,9 @@ export default function HostAddPage() {
         </div>
       </header>
 
-      <div className="flex h-[calc(100vh-64px)] w-full px-4 py-6 sm:px-6 overflow-hidden">
+      <div className="flex h-[calc(100vh-64px)] w-full px-4 lg:pl-0 py-6 sm:px-6 overflow-hidden">
         <div className="flex h-full w-full flex-col lg:flex-row overflow-hidden">
-          <aside className="hidden h-full w-full flex-shrink-0 border-b border-rose-400/60 bg-rose-500 p-4 text-white lg:block lg:w-[240px] lg:border-b-0 lg:border-r">
+          <aside className="hidden h-full w-full flex-shrink-0 border-b border-rose-400/60 bg-rose-500 p-4 text-white lg:block lg:w-[240px] lg:border-b-0 lg:border-r lg:sticky lg:top-16 lg:h-[calc(100vh-64px)]">
             <nav className="space-y-0 text-sm">
               {hostSidebarNav.map((item, index) => (
                 <div key={item.section}>
