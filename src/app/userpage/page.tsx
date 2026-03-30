@@ -544,58 +544,58 @@ export default function UserPage() {
 
       <div className="mx-auto w-full px-4 py-6 sm:px-6">
         <div className="flex h-[calc(100vh-64px)] flex-col overflow-hidden lg:flex-row">
-          <aside className="hidden h-full w-full flex-shrink-0 border-b border-border bg-background p-4 lg:block lg:w-[240px] lg:border-b-0 lg:border-r">
+          <aside className="hidden h-full w-full flex-shrink-0 border-b border-rose-400/60 bg-rose-500 p-4 text-white lg:block lg:w-[240px] lg:border-b-0 lg:border-r">
             <nav className="space-y-0 text-sm">
               <button 
                 onClick={() => setActiveSection("dashboard")}
                 className={`w-full rounded-md px-3 py-2 text-left font-medium transition-colors ${
                   activeSection === "dashboard" 
-                    ? "bg-rose-500/10 text-rose-600" 
-                    : "text-foreground hover:bg-muted"
+                    ? "bg-white text-rose-600" 
+                    : "text-white/90 hover:bg-white/15 hover:text-white"
                 }`}
               >
                 Dashboard
               </button>
-              <div className="my-2 border-b border-border" />
+              <div className="my-2 border-b border-white/30" />
               <button 
                 onClick={() => setActiveSection("bookings")}
                 className={`w-full rounded-md px-3 py-2 text-left transition-colors ${
                   activeSection === "bookings" 
-                    ? "bg-rose-500/10 text-rose-600" 
-                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                    ? "bg-white text-rose-600" 
+                    : "text-white/90 hover:bg-white/15 hover:text-white"
                 }`}
               >
                 My bookings
               </button>
-              <div className="my-2 border-b border-border" />
+              <div className="my-2 border-b border-white/30" />
               <button 
                 onClick={() => setActiveSection("reviews")}
                 className={`w-full rounded-md px-3 py-2 text-left transition-colors ${
                   activeSection === "reviews" 
-                    ? "bg-rose-500/10 text-rose-600" 
-                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                    ? "bg-white text-rose-600" 
+                    : "text-white/90 hover:bg-white/15 hover:text-white"
                 }`}
               >
                 Reviews
               </button>
-              <div className="my-2 border-b border-border" />
+              <div className="my-2 border-b border-white/30" />
               <button 
                 onClick={() => setActiveSection("payments")}
                 className={`w-full rounded-md px-3 py-2 text-left transition-colors ${
                   activeSection === "payments" 
-                    ? "bg-rose-500/10 text-rose-600" 
-                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                    ? "bg-white text-rose-600" 
+                    : "text-white/90 hover:bg-white/15 hover:text-white"
                 }`}
               >
                 Payments and invoices
               </button>
-              <div className="my-2 border-b border-border" />
+              <div className="my-2 border-b border-white/30" />
               <button 
                 onClick={() => setActiveSection("support")}
                 className={`w-full rounded-md px-3 py-2 text-left transition-colors ${
                   activeSection === "support" 
-                    ? "bg-rose-500/10 text-rose-600" 
-                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                    ? "bg-white text-rose-600" 
+                    : "text-white/90 hover:bg-white/15 hover:text-white"
                 }`}
               >
                 Help and support

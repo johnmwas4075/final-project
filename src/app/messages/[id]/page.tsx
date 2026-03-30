@@ -402,7 +402,7 @@ export default function MessageThreadPage() {
 
       <div className="flex h-[calc(100vh-64px)] w-full px-4 py-6 sm:px-6 overflow-hidden">
         <div className="flex h-full w-full flex-col lg:flex-row overflow-hidden">
-          <aside className="hidden w-full border-b border-border bg-background p-4 lg:block lg:w-[240px] lg:border-b-0 lg:border-r lg:sticky lg:top-0 lg:h-full">
+          <aside className="hidden w-full border-b border-rose-400/60 bg-rose-500 p-4 text-white lg:block lg:w-[240px] lg:border-b-0 lg:border-r lg:sticky lg:top-0 lg:h-full">
             <nav className="space-y-0 text-sm">
               {(role === "host" ? hostSidebarNav : clientSidebarNav).map((item, index) => (
                 <div key={item.section}>
@@ -410,14 +410,14 @@ export default function MessageThreadPage() {
                     onClick={() => handleNavigate(item.section)}
                     className={`w-full rounded-md px-3 py-2 text-left transition-colors ${
                       index === 0
-                        ? "bg-rose-500/10 text-rose-600"
-                        : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                        ? "bg-white text-rose-600"
+                        : "text-white/90 hover:bg-white/15 hover:text-white"
                     }`}
                   >
                     {item.label}
                   </button>
                   {index < (role === "host" ? hostSidebarNav : clientSidebarNav).length - 1 && (
-                    <div className="my-2 border-b border-border" />
+                    <div className="my-2 border-b border-white/30" />
                   )}
                 </div>
               ))}
