@@ -249,9 +249,6 @@ export async function GET(req: Request) {
 
 export async function POST(req: Request) {
   const prisma = getPrisma()
-  if (!prisma) {
-    return NextResponse.json({ error: "Database not configured" }, { status: 500 })
-  }
   let body: { userId?: string; message?: string }
   try {
     body = await req.json()
@@ -264,8 +261,12 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "message is required" }, { status: 400 })
   }
 
+  if (userId && !prisma) {
+    return NextResponse.json({ error: "Database not configured" }, { status: 500 })
+  }
+
   try {
-    const recs = await getRecommendations(prisma, userId || undefined)
+    const recs = prisma ? await getRecommendations(prisma, userId || undefined) : []
     const systemPrompt = buildSystemPrompt(recs)
     const llmMessages = [
       { role: "system", content: systemPrompt },
@@ -289,6 +290,10 @@ export async function POST(req: Request) {
         botMessage: { id: `guest-bot-${Date.now()}`, role: "BOT", content: reply, createdAt: now },
         ephemeral: true,
       })
+    }
+
+    if (!prisma) {
+      return NextResponse.json({ error: "Database not configured" }, { status: 500 })
     }
 
     const userMessage = await prisma.chatbotMessage.create({
