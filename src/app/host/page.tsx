@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
-import { User, Menu } from "lucide-react"
+import { User, Menu, Trash2, ChevronLeft, ChevronRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { MessageBell } from "@/components/message-bell"
 import { NotificationBell } from "@/components/notification-bell"
@@ -39,6 +39,7 @@ export default function HostPage() {
   const [statusFilter, setStatusFilter] = useState<"all" | "active" | "inactive">("all")
   const [bookingSearch, setBookingSearch] = useState("")
   const [bookingFilter, setBookingFilter] = useState<"all" | "booked-today" | "cancelled-today" | "reserved">("all")
+  const [bookingPage, setBookingPage] = useState(1)
   const [expandedBookingPropertyId, setExpandedBookingPropertyId] = useState<string | null>(null)
   const [bookingCalendarDate, setBookingCalendarDate] = useState<Date>(new Date())
   const [availabilitySearch, setAvailabilitySearch] = useState("")
@@ -57,6 +58,7 @@ export default function HostPage() {
     destinationUserId?: string
   }
   const [earningsTransactions, setEarningsTransactions] = useState<EarningsTx[]>([])
+  const [selectedEarning, setSelectedEarning] = useState<EarningsTx | null>(null)
   const [earningsSearch, setEarningsSearch] = useState("")
   const [earningsFilter, setEarningsFilter] = useState<"all" | "payments" | "transfers" | "withdrawals">("all")
   const [earningsPage, setEarningsPage] = useState(1)
@@ -153,20 +155,20 @@ export default function HostPage() {
   const [propertyAvailability, setPropertyAvailability] = useState<Record<string, PropertyAvailability>>({})
   const [expandedAvailabilityId, setExpandedAvailabilityId] = useState<string | null>(null)
   const [calendarAnchorDate, setCalendarAnchorDate] = useState<Date>(new Date())
-  const [bookings, setBookings] = useState<
-    {
-      id: string
-      username: string
-      property: string
-      propertyId: string
-      checkIn: string
-      checkOut: string
-      status: "booked" | "reserved" | "cancelled"
-      createdAt: string
-      cancelledAt: string | null
-      payment: string
-    }[]
-  >([])
+  type BookingItem = {
+    id: string
+    username: string
+    property: string
+    propertyId: string
+    checkIn: string
+    checkOut: string
+    status: "booked" | "reserved" | "cancelled"
+    createdAt: string
+    cancelledAt: string | null
+    payment: string
+  }
+  const [bookings, setBookings] = useState<BookingItem[]>([])
+  const [selectedBooking, setSelectedBooking] = useState<BookingItem | null>(null)
 
   useEffect(() => {
     if (typeof window === "undefined") return
@@ -517,6 +519,14 @@ export default function HostPage() {
     return matchesSearch
   })
 
+  const bookingPageSize = 20
+  const bookingStartIndex = (bookingPage - 1) * bookingPageSize
+  const bookingPageItems = filteredBookings.slice(bookingStartIndex, bookingStartIndex + bookingPageSize)
+  const bookingRangeLabel =
+    filteredBookings.length === 0
+      ? "0-0 of 0"
+      : `${bookingStartIndex + 1}-${Math.min(bookingStartIndex + bookingPageSize, filteredBookings.length)} of ${filteredBookings.length}`
+
   const paymentColor =
     bookingTab === "checking-in"
       ? "text-red-500"
@@ -583,6 +593,11 @@ export default function HostPage() {
   const currentPage = Math.min(earningsPage, totalPages)
   const startIndex = (currentPage - 1) * earningsPageSize
   const pagedEarnings = filteredEarnings.slice(startIndex, startIndex + earningsPageSize)
+
+  const earningsRangeLabel =
+    filteredEarnings.length === 0
+      ? "0-0 of 0"
+      : `${startIndex + 1}-${Math.min(startIndex + earningsPageSize, filteredEarnings.length)} of ${filteredEarnings.length}`
 
   const allReviews = reviewProperties.flatMap((property) => property.reviews)
   const totalReviews = allReviews.length
@@ -759,7 +774,7 @@ export default function HostPage() {
   }
 
   return (
-    <main className="min-h-screen bg-background">
+    <main className="h-screen overflow-hidden bg-background">
       <header className="sticky top-0 z-40 w-full border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="mx-auto flex h-16 items-center justify-between px-4 sm:px-6 lg:px-8">
           <div className="flex items-center gap-3">
@@ -910,9 +925,9 @@ export default function HostPage() {
         </div>
       </header>
 
-      <div className="mx-auto w-full px-4 py-6 sm:px-6 lg:pl-0">
+      <div className="mx-auto w-full py-6">
         <div className="flex h-[calc(100vh-64px)] flex-col overflow-hidden lg:flex-row">
-          <aside className="hidden h-full w-full flex-shrink-0 border-b border-rose-400/60 bg-rose-500 p-4 text-white lg:block lg:w-[240px] lg:border-b-0 lg:border-r lg:sticky lg:top-16 lg:h-[calc(100vh-64px)]">
+          <aside className="hidden h-full w-full flex-shrink-0 overflow-hidden border-b border-rose-400/60 bg-rose-500 p-4 text-white lg:block lg:w-[240px] lg:border-b-0 lg:border-r lg:sticky lg:top-16 lg:h-[calc(100vh-64px)] lg:self-stretch">
             <nav className="space-y-0 text-sm">
               <button 
                 onClick={() => setActiveSection("dashboard")}
@@ -993,7 +1008,7 @@ export default function HostPage() {
             </nav>
           </aside>
 
-          <section className="min-w-0 flex-1 overflow-y-auto bg-background p-6">
+          <section className="min-w-0 h-full flex-1 overflow-y-auto bg-background p-6">
             {activeSection === "dashboard" && (
               <div>
                 <h2 className="text-2xl font-semibold text-foreground">Dashboard</h2>
@@ -1425,10 +1440,6 @@ export default function HostPage() {
                 <div className="mt-8 rounded-lg border border-border bg-card p-4">
                   <div className="flex flex-wrap items-center justify-between gap-3">
                     <h3 className="text-lg font-semibold text-foreground">Transactions</h3>
-                    <div className="text-sm text-muted-foreground">
-                      Showing {startIndex + 1}-{Math.min(startIndex + earningsPageSize, filteredEarnings.length)} of{" "}
-                      {filteredEarnings.length}
-                    </div>
                   </div>
 
                   <div className="mt-4 flex flex-wrap items-center gap-3">
@@ -1454,22 +1465,7 @@ export default function HostPage() {
                       <option value="transfers">Transfers</option>
                       <option value="withdrawals">Withdrawals</option>
                     </select>
-                    <div className="ml-auto flex items-center gap-2 text-sm">
-                      <Button
-                        variant="outline"
-                        onClick={() => setEarningsPage((prev) => Math.max(prev - 1, 1))}
-                        disabled={currentPage === 1}
-                      >
-                        Prev
-                      </Button>
-                      <Button
-                        variant="outline"
-                        onClick={() => setEarningsPage((prev) => Math.min(prev + 1, totalPages))}
-                        disabled={currentPage >= totalPages}
-                      >
-                        Next
-                      </Button>
-                    </div>
+                    <div className="ml-auto text-sm text-muted-foreground">{"< "}{earningsRangeLabel}{" >"}</div>
                   </div>
 
                   <div className="mt-4 overflow-x-auto">
@@ -1486,7 +1482,11 @@ export default function HostPage() {
                       </thead>
                       <tbody>
                         {pagedEarnings.map((tx) => (
-                          <tr key={tx.id} className="border-b border-border">
+                          <tr
+                            key={tx.id}
+                            className="cursor-pointer border-b border-border transition-colors hover:bg-muted/40"
+                            onClick={() => setSelectedEarning(tx)}
+                          >
                             <td className="px-4 py-3 text-muted-foreground">{tx.date}</td>
                             <td className="px-4 py-3 text-muted-foreground capitalize">{tx.type}</td>
                             <td className="px-4 py-3 text-muted-foreground">
@@ -1557,14 +1557,18 @@ export default function HostPage() {
                   <Input
                     placeholder="Search bookings..."
                     value={bookingSearch}
-                    onChange={(event) => setBookingSearch(event.target.value)}
+                    onChange={(event) => {
+                      setBookingSearch(event.target.value)
+                      setBookingPage(1)
+                    }}
                     className="w-full md:max-w-sm"
                   />
                   <select
                     value={bookingFilter}
-                    onChange={(event) =>
+                    onChange={(event) => {
                       setBookingFilter(event.target.value as "all" | "booked-today" | "cancelled-today" | "reserved")
-                    }
+                      setBookingPage(1)
+                    }}
                     className="h-10 w-full rounded-md border border-border bg-background px-3 text-sm text-foreground sm:w-auto"
                   >
                     <option value="all">All</option>
@@ -1572,6 +1576,7 @@ export default function HostPage() {
                     <option value="cancelled-today">Cancelled today</option>
                     <option value="reserved">Reserved</option>
                   </select>
+                  <div className="ml-auto text-sm text-muted-foreground">{"< "}{bookingRangeLabel}{" >"}</div>
                 </div>
 
                 <div className="mt-4 rounded-lg border border-border bg-card">
@@ -1587,8 +1592,12 @@ export default function HostPage() {
                         </tr>
                       </thead>
                       <tbody>
-                        {filteredBookings.map((booking, index) => (
-                          <tr key={`${booking.username}-${index}`} className="border-b border-border">
+                        {bookingPageItems.map((booking, index) => (
+                          <tr
+                            key={`${booking.username}-${index}`}
+                            className="cursor-pointer border-b border-border transition-colors hover:bg-muted/40"
+                            onClick={() => setSelectedBooking(booking)}
+                          >
                             <td className="px-4 py-3 text-muted-foreground">{booking.username}</td>
                             <td className="px-4 py-3 text-muted-foreground">{booking.property}</td>
                             <td className="px-4 py-3 text-muted-foreground">{booking.checkIn}</td>
@@ -1731,6 +1740,118 @@ export default function HostPage() {
           </section>
         </div>
       </div>
+      {selectedBooking && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="w-full max-w-lg rounded-lg border border-border bg-background p-6 shadow-lg">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <h3 className="text-lg font-semibold text-foreground">Booking details</h3>
+                <p className="text-sm text-muted-foreground">Full booking information.</p>
+              </div>
+              <Button variant="outline" size="sm" onClick={() => setSelectedBooking(null)}>
+                Close
+              </Button>
+            </div>
+
+            <div className="mt-6 space-y-3 text-sm">
+              <div className="flex items-center justify-between">
+                <span className="text-muted-foreground">Guest</span>
+                <span className="font-medium text-foreground">{selectedBooking.username}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-muted-foreground">Property</span>
+                <span className="font-medium text-foreground">{selectedBooking.property}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-muted-foreground">Check-in</span>
+                <span className="font-medium text-foreground">{selectedBooking.checkIn}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-muted-foreground">Check-out</span>
+                <span className="font-medium text-foreground">{selectedBooking.checkOut}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-muted-foreground">Status</span>
+                <span className="font-medium text-foreground capitalize">{selectedBooking.status}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-muted-foreground">Payment</span>
+                <span className="font-medium text-foreground capitalize">{selectedBooking.payment}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-muted-foreground">Booked on</span>
+                <span className="font-medium text-foreground">{selectedBooking.createdAt}</span>
+              </div>
+              {selectedBooking.cancelledAt ? (
+                <div className="flex items-center justify-between">
+                  <span className="text-muted-foreground">Cancelled on</span>
+                  <span className="font-medium text-foreground">{selectedBooking.cancelledAt}</span>
+                </div>
+              ) : null}
+            </div>
+
+            <div className="mt-6 flex justify-end">
+              <Button variant="outline" onClick={() => setSelectedBooking(null)}>
+                Close
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {selectedEarning && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="w-full max-w-lg rounded-lg border border-border bg-background p-6 shadow-lg">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <h3 className="text-lg font-semibold text-foreground">Transaction details</h3>
+                <p className="text-sm text-muted-foreground">Full transaction information.</p>
+              </div>
+              <Button variant="outline" size="sm" onClick={() => setSelectedEarning(null)}>
+                Close
+              </Button>
+            </div>
+
+            <div className="mt-6 space-y-3 text-sm">
+              <div className="flex items-center justify-between">
+                <span className="text-muted-foreground">Date</span>
+                <span className="font-medium text-foreground">{selectedEarning.date}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-muted-foreground">Type</span>
+                <span className="font-medium text-foreground capitalize">{selectedEarning.type}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-muted-foreground">Amount</span>
+                <span className="font-medium text-foreground">{formatCurrency(selectedEarning.amount)}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-muted-foreground">Actor</span>
+                <span className="font-medium text-foreground">{selectedEarning.actorUserId ? (selectedEarning.actorUserId === userId ? "You" : selectedEarning.actorUserId) : "-"}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-muted-foreground">From</span>
+                <span className="font-medium text-foreground capitalize">{selectedEarning.sourceType}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-muted-foreground">To</span>
+                <span className="font-medium text-foreground capitalize">{selectedEarning.destinationType}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-muted-foreground">Note</span>
+                <span className="font-medium text-foreground">{selectedEarning.note || "-"}</span>
+              </div>
+            </div>
+
+            <div className="mt-6 flex justify-end">
+              <Button variant="outline" onClick={() => setSelectedEarning(null)}>
+                Close
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {isPropertyModalOpen && selectedPropertyId && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
           <div className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-lg border border-border bg-background p-6 shadow-lg">
@@ -1863,48 +1984,60 @@ export default function HostPage() {
                       className="group relative h-24 overflow-hidden rounded-md border border-border bg-muted/20"
                     >
                       <img src={src} alt={`Property ${index + 1}`} className="h-full w-full object-cover" />
-                      <div className="absolute inset-0 flex items-center justify-center gap-2 bg-black/50 opacity-0 transition-opacity group-hover:opacity-100">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() =>
-                            setEditImages((prev) => prev.filter((_, i) => i !== index))
-                          }
-                        >
-                          Remove
-                        </Button>
-                        {index > 0 && (
+                      <div className="absolute inset-0 flex items-center justify-center bg-black/50 opacity-100 transition-opacity sm:opacity-0 sm:group-hover:opacity-100">
+                        <div className="flex w-full items-center justify-between px-2">
+                          {index > 0 ? (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="h-8 w-8 p-0"
+                              aria-label="Move image left"
+                              onClick={() =>
+                                setEditImages((prev) => {
+                                  const next = [...prev]
+                                  const [item] = next.splice(index, 1)
+                                  next.splice(index - 1, 0, item)
+                                  return next
+                                })
+                              }
+                            >
+                              <ChevronLeft className="h-4 w-4" />
+                            </Button>
+                          ) : (
+                            <span className="h-8 w-8" />
+                          )}
                           <Button
                             variant="outline"
                             size="sm"
+                            className="h-8 w-8 p-0"
+                            aria-label="Remove image"
                             onClick={() =>
-                              setEditImages((prev) => {
-                                const next = [...prev]
-                                const [item] = next.splice(index, 1)
-                                next.splice(index - 1, 0, item)
-                                return next
-                              })
+                              setEditImages((prev) => prev.filter((_, i) => i !== index))
                             }
                           >
-                            Move Left
+                            <Trash2 className="h-4 w-4" />
                           </Button>
-                        )}
-                        {index < editImages.length - 1 && (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() =>
-                              setEditImages((prev) => {
-                                const next = [...prev]
-                                const [item] = next.splice(index, 1)
-                                next.splice(index + 1, 0, item)
-                                return next
-                              })
-                            }
-                          >
-                            Move Right
-                          </Button>
-                        )}
+                          {index < editImages.length - 1 ? (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="h-8 w-8 p-0"
+                              aria-label="Move image right"
+                              onClick={() =>
+                                setEditImages((prev) => {
+                                  const next = [...prev]
+                                  const [item] = next.splice(index, 1)
+                                  next.splice(index + 1, 0, item)
+                                  return next
+                                })
+                              }
+                            >
+                              <ChevronRight className="h-4 w-4" />
+                            </Button>
+                          ) : (
+                            <span className="h-8 w-8" />
+                          )}
+                        </div>
                       </div>
                     </div>
                   ))}

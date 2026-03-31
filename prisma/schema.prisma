@@ -7,36 +7,37 @@ datasource db {
 }
 
 model User {
-  id                   String              @id @default(dbgenerated("gen_random_uuid()"))
-  firstName            String              @map("firstName")
-  middleName           String?             @map("middleName")
-  lastName             String              @map("lastName")
-  avatarUrl            String?             @map("avatarUrl")
-  phoneNumber          String              @unique @map("phoneNumber")
-  email                String              @unique
+  id                   String                  @id @default(dbgenerated("gen_random_uuid()"))
+  firstName            String                  @map("firstName")
+  middleName           String?                 @map("middleName")
+  lastName             String                  @map("lastName")
+  avatarUrl            String?                 @map("avatarUrl")
+  phoneNumber          String                  @unique @map("phoneNumber")
+  email                String                  @unique
   password             String
-  createdAt            DateTime            @default(now()) @map("createdAt") @db.Timestamp(6)
-  updatedAt            DateTime            @default(now()) @updatedAt @map("updatedAt") @db.Timestamp(6)
-  hasAcceptedHostTerms Boolean             @default(false) @map("hasAcceptedHostTerms")
-  hasAcceptedTerms     Boolean             @default(false) @map("hasAcceptedTerms")
-  username             String?             @unique
-  walletBalance        Float               @default(0)
+  createdAt            DateTime                @default(now()) @map("createdAt") @db.Timestamp(6)
+  updatedAt            DateTime                @default(now()) @updatedAt @map("updatedAt") @db.Timestamp(6)
+  hasAcceptedHostTerms Boolean                 @default(false) @map("hasAcceptedHostTerms")
+  hasAcceptedTerms     Boolean                 @default(false) @map("hasAcceptedTerms")
+  username             String?                 @unique
+  walletBalance        Float                   @default(0)
   bookings             Booking[]
   properties           Property[]
   reviews              Review[]
-  receivedTransactions Transaction[]       @relation("ReceiverUser")
-  sentTransactions     Transaction[]       @relation("SenderUser")
+  receivedTransactions Transaction[]           @relation("ReceiverUser")
+  sentTransactions     Transaction[]           @relation("SenderUser")
   hostWallets          HostWalletTransaction[]
   hostWalletActor      HostWalletTransaction[] @relation("HostWalletActor")
-  cancellationRequests CancellationRequest[] @relation("CancellationHost")
-  cancellations CancellationRequest[] @relation("CancellationGuest")
+  cancellationRequests CancellationRequest[]   @relation("CancellationHost")
+  cancellations        CancellationRequest[]   @relation("CancellationGuest")
   paymentMethods       UserPaymentMethod[]
-  sentMessages       Message[]           @relation("SentMessages")
-  receivedMessages   Message[]           @relation("ReceivedMessages")
-  hostThreads        MessageThread[]     @relation("HostThreads")
-  guestThreads       MessageThread[]     @relation("GuestThreads")
-  notifications      Notification[]
-  chatbotMessages    ChatbotMessage[]
+  sentMessages         Message[]               @relation("SentMessages")
+  receivedMessages     Message[]               @relation("ReceivedMessages")
+  hostThreads          MessageThread[]         @relation("HostThreads")
+  guestThreads         MessageThread[]         @relation("GuestThreads")
+  notifications        Notification[]
+  chatbotMessages      ChatbotMessage[]
+  recommendations      Recommendation[]
 
   @@map("user")
 }
@@ -62,34 +63,35 @@ model Location {
 }
 
 model Property {
-  id               String    @id @default(dbgenerated("gen_random_uuid()"))
-  propertyName     String    @map("propertyName")
-  description      String
-  rooms            Int
-  bathrooms        Int      @default(1)
-  price            Float
-  guests           Int
-  photos           String[]
-  amenities        Json
-  countyId         String    @map("countyId")
-  subCountyId      String    @map("subCountyId")
-  constituencyId   String    @map("constituencyId")
-  wardId           String    @map("wardId")
-  userId           String    @map("userId")
-  createdAt        DateTime  @default(now()) @map("createdAt")
-  updatedAt        DateTime  @default(now()) @updatedAt @map("updatedAt")
-  constituencyName String?   @map("constituencyName")
-  countyName       String?   @map("countyName")
-  minNights        Int       @default(1) @map("minNights")
-  wardName         String?   @map("wardName")
-  bookings         Booking[]
-  constituency     Location  @relation("constituency_properties", fields: [constituencyId], references: [id])
-  county           Location  @relation("county_properties", fields: [countyId], references: [id])
-  subCounty        Location  @relation("subcounty_properties", fields: [subCountyId], references: [id])
-  user             User      @relation(fields: [userId], references: [id])
-  ward             Location  @relation("ward_properties", fields: [wardId], references: [id])
-  reviews          Review[]
+  id                      String                @id @default(dbgenerated("gen_random_uuid()"))
+  propertyName            String                @map("propertyName")
+  description             String
+  rooms                   Int
+  bathrooms               Int                   @default(1)
+  price                   Float
+  guests                  Int
+  photos                  String[]
+  amenities               Json
+  countyId                String                @map("countyId")
+  subCountyId             String                @map("subCountyId")
+  constituencyId          String                @map("constituencyId")
+  wardId                  String                @map("wardId")
+  userId                  String                @map("userId")
+  createdAt               DateTime              @default(now()) @map("createdAt")
+  updatedAt               DateTime              @default(now()) @updatedAt @map("updatedAt")
+  constituencyName        String?               @map("constituencyName")
+  countyName              String?               @map("countyName")
+  minNights               Int                   @default(1) @map("minNights")
+  wardName                String?               @map("wardName")
+  bookings                Booking[]
+  constituency            Location              @relation("constituency_properties", fields: [constituencyId], references: [id])
+  county                  Location              @relation("county_properties", fields: [countyId], references: [id])
+  subCounty               Location              @relation("subcounty_properties", fields: [subCountyId], references: [id])
+  user                    User                  @relation(fields: [userId], references: [id])
+  ward                    Location              @relation("ward_properties", fields: [wardId], references: [id])
+  reviews                 Review[]
   cancellationSuggestions CancellationRequest[] @relation("CancellationSuggestion")
+  recommendations         Recommendation[]
 
   @@index([countyId])
   @@index([subCountyId])
@@ -99,21 +101,21 @@ model Property {
 }
 
 model Booking {
-  id            String        @id @default(dbgenerated("gen_random_uuid()"))
-  userId        String        @map("userId")
-  propertyId    String        @map("propertyId")
-  checkIn       DateTime      @map("checkIn") @db.Timestamp(6)
-  checkOut      DateTime      @map("checkOut") @db.Timestamp(6)
-  status        BookingStatus @default(PENDING)
-  createdAt     DateTime      @default(now()) @map("createdAt") @db.Timestamp(6)
-  updatedAt     DateTime      @default(now()) @updatedAt @map("updatedAt") @db.Timestamp(6)
-  guests        Int           @default(1)
-  hostPayout    Float         @default(0)
-  paymentStatus PaymentStatus @default(PENDING)
-  platformFee   Float         @default(0)
-  totalAmount   Float         @default(0)
-  property      Property      @relation(fields: [propertyId], references: [id])
-  user          User          @relation(fields: [userId], references: [id])
+  id            String                @id @default(dbgenerated("gen_random_uuid()"))
+  userId        String                @map("userId")
+  propertyId    String                @map("propertyId")
+  checkIn       DateTime              @map("checkIn") @db.Timestamp(6)
+  checkOut      DateTime              @map("checkOut") @db.Timestamp(6)
+  status        BookingStatus         @default(PENDING)
+  createdAt     DateTime              @default(now()) @map("createdAt") @db.Timestamp(6)
+  updatedAt     DateTime              @default(now()) @updatedAt @map("updatedAt") @db.Timestamp(6)
+  guests        Int                   @default(1)
+  hostPayout    Float                 @default(0)
+  paymentStatus PaymentStatus         @default(PENDING)
+  platformFee   Float                 @default(0)
+  totalAmount   Float                 @default(0)
+  property      Property              @relation(fields: [propertyId], references: [id])
+  user          User                  @relation(fields: [userId], references: [id])
   reviews       Review[]
   transactions  Transaction[]
   cancellations CancellationRequest[] @relation("BookingCancellations")
@@ -242,20 +244,20 @@ model HostWalletTransaction {
 }
 
 model CancellationRequest {
-  id                    String             @id @default(dbgenerated("gen_random_uuid()"))
-  bookingId             String             @map("bookingId")
-  hostId                String             @map("hostId")
-  guestId               String             @map("guestId")
-  status                CancellationStatus @default(PENDING)
-  reason                String
-  suggestionPropertyId  String?            @map("suggestionPropertyId")
-  createdAt             DateTime           @default(now()) @map("createdAt") @db.Timestamp(6)
-  respondedAt           DateTime?          @map("respondedAt") @db.Timestamp(6)
+  id                   String             @id @default(dbgenerated("gen_random_uuid()"))
+  bookingId            String             @map("bookingId")
+  hostId               String             @map("hostId")
+  guestId              String             @map("guestId")
+  status               CancellationStatus @default(PENDING)
+  reason               String
+  suggestionPropertyId String?            @map("suggestionPropertyId")
+  createdAt            DateTime           @default(now()) @map("createdAt") @db.Timestamp(6)
+  respondedAt          DateTime?          @map("respondedAt") @db.Timestamp(6)
 
-  booking               Booking            @relation("BookingCancellations", fields: [bookingId], references: [id])
-  host                  User               @relation("CancellationHost", fields: [hostId], references: [id])
-  guest                 User               @relation("CancellationGuest", fields: [guestId], references: [id])
-  suggestionProperty    Property?          @relation("CancellationSuggestion", fields: [suggestionPropertyId], references: [id])
+  booking            Booking   @relation("BookingCancellations", fields: [bookingId], references: [id])
+  host               User      @relation("CancellationHost", fields: [hostId], references: [id])
+  guest              User      @relation("CancellationGuest", fields: [guestId], references: [id])
+  suggestionProperty Property? @relation("CancellationSuggestion", fields: [suggestionPropertyId], references: [id])
 
   @@index([bookingId], map: "cancellation_booking_idx")
   @@index([hostId], map: "cancellation_host_idx")
@@ -346,16 +348,16 @@ enum ChatbotRole {
 }
 
 model MessageThread {
-  id            String   @id @default(dbgenerated("gen_random_uuid()"))
+  id            String    @id @default(dbgenerated("gen_random_uuid()"))
   hostId        String
   guestId       String
-  createdAt     DateTime @default(now()) @db.Timestamp(6)
-  updatedAt     DateTime @default(now()) @updatedAt @db.Timestamp(6)
+  createdAt     DateTime  @default(now()) @db.Timestamp(6)
+  updatedAt     DateTime  @default(now()) @updatedAt @db.Timestamp(6)
   lastMessageAt DateTime? @db.Timestamp(6)
 
-  host          User     @relation("HostThreads", fields: [hostId], references: [id])
-  guest         User     @relation("GuestThreads", fields: [guestId], references: [id])
-  messages      Message[]
+  host     User      @relation("HostThreads", fields: [hostId], references: [id])
+  guest    User      @relation("GuestThreads", fields: [guestId], references: [id])
+  messages Message[]
 
   @@unique([hostId, guestId])
   @@index([hostId])
@@ -364,17 +366,17 @@ model MessageThread {
 }
 
 model Message {
-  id         String   @id @default(dbgenerated("gen_random_uuid()"))
-  threadId   String   @map("threadId")
-  senderId   String   @map("senderId")
-  receiverId String   @map("receiverId")
+  id         String    @id @default(dbgenerated("gen_random_uuid()"))
+  threadId   String    @map("threadId")
+  senderId   String    @map("senderId")
+  receiverId String    @map("receiverId")
   body       String
-  createdAt  DateTime @default(now()) @db.Timestamp(6)
+  createdAt  DateTime  @default(now()) @db.Timestamp(6)
   readAt     DateTime? @db.Timestamp(6)
 
-  thread     MessageThread @relation(fields: [threadId], references: [id])
-  sender     User          @relation("SentMessages", fields: [senderId], references: [id])
-  receiver   User          @relation("ReceivedMessages", fields: [receiverId], references: [id])
+  thread   MessageThread @relation(fields: [threadId], references: [id])
+  sender   User          @relation("SentMessages", fields: [senderId], references: [id])
+  receiver User          @relation("ReceivedMessages", fields: [receiverId], references: [id])
 
   @@index([threadId])
   @@index([senderId])
@@ -390,7 +392,7 @@ model ChatbotMessage {
   content   String
   createdAt DateTime    @default(now()) @map("createdAt") @db.Timestamp(6)
 
-  user      User        @relation(fields: [userId], references: [id])
+  user User @relation(fields: [userId], references: [id])
 
   @@index([userId])
   @@index([createdAt])
@@ -398,18 +400,18 @@ model ChatbotMessage {
 }
 
 model Notification {
-  id         String   @id @default(dbgenerated("gen_random_uuid()"))
-  userId     String   @map("userId")
+  id         String    @id @default(dbgenerated("gen_random_uuid()"))
+  userId     String    @map("userId")
   role       String
   category   String
   title      String
   message    String
-  createdAt  DateTime @default(now()) @db.Timestamp(6)
+  createdAt  DateTime  @default(now()) @db.Timestamp(6)
   readAt     DateTime? @db.Timestamp(6)
-  bookingId  String?  @map("bookingId")
-  propertyId String?  @map("propertyId")
+  bookingId  String?   @map("bookingId")
+  propertyId String?   @map("propertyId")
 
-  user       User     @relation(fields: [userId], references: [id])
+  user User @relation(fields: [userId], references: [id])
 
   @@index([userId])
   @@index([role])
@@ -428,4 +430,20 @@ model MessageTyping {
   @@index([threadId])
   @@index([userId])
   @@map("message_typing")
+}
+
+model Recommendation {
+  id         String   @id @default(dbgenerated("gen_random_uuid()"))
+  userId     String
+  propertyId String
+  score      Float    @default(0)
+  createdAt  DateTime @default(now()) @db.Timestamp(6)
+
+  user     User     @relation(fields: [userId], references: [id])
+  property Property @relation(fields: [propertyId], references: [id])
+
+  @@unique([userId, propertyId])
+  @@index([userId])
+  @@index([score])
+  @@map("recommendations")
 }

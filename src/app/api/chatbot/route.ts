@@ -54,7 +54,7 @@ const pickPropertyCounty = async (message: string, prisma: ReturnType<typeof get
   return null
 }
 
-const buildBotReply = async (message: string, prisma: ReturnType<typeof getPrisma>) => {
+const buildBotReply = async (message: string, prisma: ReturnType<typeof getPrisma>, userId?: string) => {
   const text = normalize(message)
   const wantsTourism = /(tour|tourist|destination|places|place|visit|attraction)/.test(text)
   const wantsStay = /(dwellify|stay|property|room|accommodation|house)/.test(text)
@@ -91,7 +91,7 @@ const buildBotReply = async (message: string, prisma: ReturnType<typeof getPrism
     if (properties.length > 0) {
       const heading = county ? `Popular stays in ${county}:` : "Popular stays:"
       const list = properties
-        .map((item) => `- ${item.propertyName} (${item.countyName ?? "Kenya"}) • ${item.rooms} rooms • KES ${Math.round(item.price)}`)
+        .map((item) => `- ${item.propertyName} (${item.countyName ?? "Kenya"}) - ${item.rooms} rooms - KES ${Math.round(item.price)}`)
         .join("\n")
       sections.push([heading, list].join("\n"))
     } else {
@@ -159,7 +159,7 @@ export async function POST(req: Request) {
       },
     })
 
-    const reply = await buildBotReply(message, prisma)
+    const reply = await buildBotReply(message, prisma, userId)
     const botMessage = await prisma.chatbotMessage.create({
       data: {
         userId,

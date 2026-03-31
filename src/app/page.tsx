@@ -1,4 +1,5 @@
 import { LocationsList } from "@/components/locations-list"
+import { RecommendationPopup } from "@/components/recommendation-popup"
 import { getPrisma } from "@/lib/prisma"
 
 export const dynamic = "force-dynamic"
@@ -108,7 +109,7 @@ export default async function Home() {
           loadMoreCount={4}
         />
       </div>
-    </main>
+          <RecommendationPopup />\n    </main>
   )
 }
 

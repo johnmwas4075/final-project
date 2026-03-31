@@ -78,6 +78,17 @@ export default function UserPage() {
   const [isReviewModalOpen, setIsReviewModalOpen] = useState(false)
   const [isAddReviewModalOpen, setIsAddReviewModalOpen] = useState(false)
   const [userId, setUserId] = useState<string | null>(null)
+  const [recommendations, setRecommendations] = useState<RecommendationItem[]>([])
+  const [isRecLoading, setIsRecLoading] = useState(false)
+  const [bookingSearch, setBookingSearch] = useState("")
+  const [bookingPage, setBookingPage] = useState(0)
+  const [reviewSearch, setReviewSearch] = useState("")
+  const [reviewPage, setReviewPage] = useState(0)
+  const [paymentSearch, setPaymentSearch] = useState("")
+  const [paymentPage, setPaymentPage] = useState(0)
+  const [selectedBooking, setSelectedBooking] = useState<any | null>(null)
+  const [selectedPayment, setSelectedPayment] = useState<any | null>(null)
+  const [selectedRecommendation, setSelectedRecommendation] = useState<RecommendationItem | null>(null)
   const [username, setUsername] = useState<string | null>(null)
   const [writtenReviews, setWrittenReviews] = useState<WrittenReview[]>([])
   const [pendingReviews, setPendingReviews] = useState<PendingBooking[]>([])
@@ -167,6 +178,20 @@ export default function UserPage() {
     if (storedName) setFirstName(storedName)
     setIsReady(true)
   }, [router])
+
+  useEffect(() => {
+    if (!userId) return
+    setIsRecLoading(true)
+    fetch(`/api/recommendations?userId=${encodeURIComponent(userId)}&limit=4`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (Array.isArray(data.recommendations)) {
+          setRecommendations(data.recommendations)
+        }
+      })
+      .catch(() => null)
+      .finally(() => setIsRecLoading(false))
+  }, [userId])
 
   useEffect(() => {
     if (!userId) return
@@ -389,6 +414,171 @@ export default function UserPage() {
       day: "numeric",
     })
   }
+
+  const bookingRecords = [
+    {
+      id: "bk-1",
+      propertyId: "property-1",
+      propertyName: "Diani House",
+      userName: "you",
+      status: "pending",
+      bookingDate: "Mar 10, 2026",
+      cost: "Ksh 320",
+      checkIn: "Mar 20, 2026",
+      checkOut: "Mar 23, 2026",
+      rating: "-",
+      timeRemaining: "4 days",
+    },
+    {
+      id: "bk-2",
+      propertyId: "property-2",
+      propertyName: "Naivasha Retreat",
+      userName: "you",
+      status: "past",
+      bookingDate: "Jan 5, 2026",
+      cost: "Ksh 540",
+      checkIn: "Jan 12, 2026",
+      checkOut: "Jan 15, 2026",
+      rating: "4.8",
+      timeRemaining: "Completed",
+    },
+    {
+      id: "bk-3",
+      propertyId: "property-3",
+      propertyName: "Nairobi Loft",
+      userName: "you",
+      status: "cancelled",
+      bookingDate: "Feb 2, 2026",
+      cost: "Ksh 210",
+      checkIn: "Feb 20, 2026",
+      checkOut: "Feb 22, 2026",
+      rating: "-",
+      timeRemaining: "Cancelled",
+    },
+  ]
+
+  const bookingFiltered = bookingRecords.filter((item) => {
+    if (item.status !== bookingTab) return false
+    const query = bookingSearch.trim().toLowerCase()
+    if (!query) return true
+    return [item.propertyName, item.userName].some((value) => value.toLowerCase().includes(query))
+  })
+
+  const bookingPageSize = 20
+  const bookingStart = bookingPage * bookingPageSize
+  const bookingEnd = Math.min(bookingStart + bookingPageSize, bookingFiltered.length)
+  const bookingPageItems = bookingFiltered.slice(bookingStart, bookingEnd)
+  const bookingRangeLabel = bookingFiltered.length == 0 ? "0-0 of 0" : (bookingStart + 1) + "-" + bookingEnd + " of " + bookingFiltered.length
+
+  const writtenReviewRecords = writtenReviews.map((review) => ({
+    id: review.id,
+    propertyId: review.propertyId,
+    propertyName: review.propertyName,
+    reviewerName: review.reviewerName,
+    reviewDate: formatDate(review.reviewDate),
+    stars: String(review.stars),
+    rating: review.rating,
+    comment: review.comment,
+    hostId: review.hostId,
+    checkIn: formatDate(review.checkIn),
+    checkOut: formatDate(review.checkOut),
+    ratings: {
+      cleanliness: review.cleanliness,
+      accuracy: review.accuracy,
+      communication: review.communication,
+      location: review.location,
+      checkin: review.checkin,
+      value: review.value,
+      hostRating: review.hostRating,
+    },
+  }))
+
+  const pendingReviewRecords = pendingReviews.map((booking) => ({
+    id: booking.id,
+    propertyId: booking.propertyId,
+    propertyName: booking.propertyName,
+    reviewerName: "-",
+    reviewDate: "-",
+    stars: "-",
+    rating: "Pending",
+    comment: "Review not yet submitted.",
+    hostId: booking.hostId,
+    checkIn: formatDate(booking.checkIn),
+    checkOut: formatDate(booking.checkOut),
+    ratings: {
+      cleanliness: 0,
+      accuracy: 0,
+      communication: 0,
+      location: 0,
+      checkin: 0,
+      value: 0,
+      hostRating: 0,
+    },
+  }))
+
+  const reviewRecords = reviewTab === "written" ? writtenReviewRecords : pendingReviewRecords
+  const reviewFiltered = reviewRecords.filter((item) => {
+    const query = reviewSearch.trim().toLowerCase()
+    if (!query) return true
+    return [item.propertyName, item.reviewerName].some((value) => value.toLowerCase().includes(query))
+  })
+
+  const reviewPageSize = 20
+  const reviewStart = reviewPage * reviewPageSize
+  const reviewEnd = Math.min(reviewStart + reviewPageSize, reviewFiltered.length)
+  const reviewPageItems = reviewFiltered.slice(reviewStart, reviewEnd)
+  const reviewRangeLabel = reviewFiltered.length == 0 ? "0-0 of 0" : (reviewStart + 1) + "-" + reviewEnd + " of " + reviewFiltered.length
+
+  const paymentRecords = [
+    {
+      id: "pay-1",
+      type: "Deposit",
+      typeKey: "deposits",
+      date: "Mar 12, 2026",
+      amount: "Ksh 100.00",
+      status: "Completed",
+      to: "Wallet deposit",
+      username: "",
+      reference: "TXN-1001",
+    },
+    {
+      id: "pay-2",
+      type: "Payment",
+      typeKey: "payments",
+      date: "Mar 20, 2026",
+      amount: "Ksh 320.00",
+      status: "Processing",
+      to: "@host123",
+      username: "host123",
+      reference: "PAY-8832",
+    },
+    {
+      id: "pay-3",
+      type: "Withdrawal",
+      typeKey: "withdrawals",
+      date: "Mar 25, 2026",
+      amount: "Ksh 200.00",
+      status: "Completed",
+      to: "MPESA 0703***867",
+      username: "",
+      reference: "WTH-4401",
+    },
+  ]
+
+  const paymentFiltered = paymentRecords.filter((item) => {
+    if (transactionTab !== "all" && item.typeKey !== transactionTab) {
+      return false
+    }
+    const query = paymentSearch.trim().toLowerCase()
+    if (!query) return true
+    return [item.to, item.username].some((value) => value.toLowerCase().includes(query))
+  })
+
+  const paymentPageSize = 20
+  const paymentStart = paymentPage * paymentPageSize
+  const paymentEnd = Math.min(paymentStart + paymentPageSize, paymentFiltered.length)
+  const paymentPageItems = paymentFiltered.slice(paymentStart, paymentEnd)
+  const paymentRangeLabel = paymentFiltered.length == 0 ? "0-0 of 0" : (paymentStart + 1) + "-" + paymentEnd + " of " + paymentFiltered.length
 
   return (
     <main className="h-screen overflow-hidden bg-background">
@@ -626,24 +816,40 @@ export default function UserPage() {
                   </div>
                   <div className="rounded-lg border border-border bg-card p-4 md:col-span-2">
                     <h3 className="font-semibold text-foreground">Recommended Places</h3>
-                    <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
-                      <div className="rounded-md border border-border bg-background p-3">
-                        <p className="text-sm font-semibold text-foreground">Diani Beach</p>
-                        <p className="text-xs text-muted-foreground">Relaxing seaside escapes</p>
+                    {isRecLoading ? (
+                      <p className="mt-3 text-sm text-muted-foreground">Loading recommendations...</p>
+                    ) : recommendations.length === 0 ? (
+                      <p className="mt-3 text-sm text-muted-foreground">No recommendations yet.</p>
+                    ) : (
+                      <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
+                        {recommendations.map((item) => (
+                          <div
+                            key={item.id}
+                            role="button"
+                            tabIndex={0}
+                            onClick={() => setSelectedRecommendation(item)}
+                            onKeyDown={(event) => {
+                              if (event.key === "Enter" || event.key === " ") {
+                                event.preventDefault()
+                                setSelectedRecommendation(item)
+                              }
+                            }}
+                            className="flex min-h-[120px] gap-3 rounded-md border border-border bg-background p-4 hover:border-rose-400"
+                          >
+                            <img
+                              src={item.image}
+                              alt={item.name}
+                              className="h-24 w-28 rounded-md object-cover"
+                            />
+                            <div className="min-w-0">
+                              <p className="text-sm font-semibold text-foreground truncate">{item.name}</p>
+                              <p className="text-xs text-muted-foreground line-clamp-2">{item.description}</p>
+                              <p className="mt-1 text-xs font-medium text-rose-500">{item.rating.toFixed(1)} ★</p>
+                            </div>
+                          </div>
+                        ))}
                       </div>
-                      <div className="rounded-md border border-border bg-background p-3">
-                        <p className="text-sm font-semibold text-foreground">Nairobi</p>
-                        <p className="text-xs text-muted-foreground">City breaks and culture</p>
-                      </div>
-                      <div className="rounded-md border border-border bg-background p-3">
-                        <p className="text-sm font-semibold text-foreground">Naivasha</p>
-                        <p className="text-xs text-muted-foreground">Lakeside stays</p>
-                      </div>
-                      <div className="rounded-md border border-border bg-background p-3">
-                        <p className="text-sm font-semibold text-foreground">Nanyuki</p>
-                        <p className="text-xs text-muted-foreground">Mountain views</p>
-                      </div>
-                    </div>
+                    )}
                   </div>
                   <div className="rounded-lg border border-border bg-card p-4">
                     <h3 className="font-semibold text-foreground">Pending Actions</h3>
@@ -685,28 +891,25 @@ export default function UserPage() {
                 </div>
 
                 <div className="mt-8">
-                  <div className="flex flex-wrap gap-2">
-                    <Button
-                      variant={bookingTab === "pending" ? "default" : "outline"}
-                      className={bookingTab === "pending" ? "bg-rose-500 text-white hover:bg-rose-600" : ""}
-                      onClick={() => setBookingTab("pending")}
-                    >
-                      Pending
-                    </Button>
-                    <Button
-                      variant={bookingTab === "past" ? "default" : "outline"}
-                      className={bookingTab === "past" ? "bg-rose-500 text-white hover:bg-rose-600" : ""}
-                      onClick={() => setBookingTab("past")}
-                    >
-                      Past
-                    </Button>
-                    <Button
-                      variant={bookingTab === "cancelled" ? "default" : "outline"}
-                      className={bookingTab === "cancelled" ? "bg-rose-500 text-white hover:bg-rose-600" : ""}
-                      onClick={() => setBookingTab("cancelled")}
-                    >
-                      Cancelled
-                    </Button>
+
+                <div className="mt-4 flex flex-wrap items-center gap-3">
+                    <Input
+                      value={bookingSearch}
+                      onChange={(event) => { setBookingSearch(event.target.value); setBookingPage(0) }}
+                      placeholder="Search properties or users"
+                      className="w-full max-w-xs"
+                    />
+                    <Select value={bookingTab} onValueChange={(value) => { setBookingTab(value as "pending" | "past" | "cancelled"); setBookingPage(0) }}>
+                      <SelectTrigger className="w-full max-w-[200px]">
+                        <SelectValue placeholder="Category" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="pending">Pending</SelectItem>
+                        <SelectItem value="past">Past</SelectItem>
+                        <SelectItem value="cancelled">Cancelled</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <div className="ml-auto text-xs text-muted-foreground">{"< "}{bookingRangeLabel}{" >"}</div>
                   </div>
 
                   <div className="mt-4 rounded-lg border border-border bg-card">
@@ -724,41 +927,21 @@ export default function UserPage() {
                           </tr>
                         </thead>
                         <tbody>
-                          {bookingTab === "pending" && (
-                            <tr className="border-b border-border">
-                              <td className="px-4 py-3 font-medium text-foreground">Diani House</td>
-                              <td className="px-4 py-3 text-muted-foreground">Mar 10, 2026</td>
-                              <td className="px-4 py-3 text-muted-foreground">$320</td>
-                              <td className="px-4 py-3 text-muted-foreground">Mar 20, 2026</td>
-                              <td className="px-4 py-3 text-muted-foreground">Mar 23, 2026</td>
-                              <td className="px-4 py-3 text-muted-foreground">-</td>
-                              <td className="px-4 py-3 text-rose-500">4 days</td>
+                          {bookingPageItems.map((item) => (
+                            <tr
+                              key={item.id}
+                              className="border-b border-border cursor-pointer"
+                              onClick={() => setSelectedBooking(item)}
+                            >
+                              <td className="px-4 py-3 font-medium text-foreground">{item.propertyName}</td>
+                              <td className="px-4 py-3 text-muted-foreground">{item.bookingDate}</td>
+                              <td className="px-4 py-3 text-muted-foreground">{item.cost}</td>
+                              <td className="px-4 py-3 text-muted-foreground">{item.checkIn}</td>
+                              <td className="px-4 py-3 text-muted-foreground">{item.checkOut}</td>
+                              <td className="px-4 py-3 text-muted-foreground">{item.rating}</td>
+                              <td className="px-4 py-3 text-muted-foreground">{item.timeRemaining}</td>
                             </tr>
-                          )}
-
-                          {bookingTab === "past" && (
-                            <tr className="border-b border-border">
-                              <td className="px-4 py-3 font-medium text-foreground">Naivasha Retreat</td>
-                              <td className="px-4 py-3 text-muted-foreground">Jan 5, 2026</td>
-                              <td className="px-4 py-3 text-muted-foreground">$540</td>
-                              <td className="px-4 py-3 text-muted-foreground">Jan 12, 2026</td>
-                              <td className="px-4 py-3 text-muted-foreground">Jan 15, 2026</td>
-                              <td className="px-4 py-3 text-muted-foreground">4.8</td>
-                              <td className="px-4 py-3 text-muted-foreground">Completed</td>
-                            </tr>
-                          )}
-
-                          {bookingTab === "cancelled" && (
-                            <tr className="border-b border-border">
-                              <td className="px-4 py-3 font-medium text-foreground">Nairobi Loft</td>
-                              <td className="px-4 py-3 text-muted-foreground">Feb 2, 2026</td>
-                              <td className="px-4 py-3 text-muted-foreground">$210</td>
-                              <td className="px-4 py-3 text-muted-foreground">Feb 20, 2026</td>
-                              <td className="px-4 py-3 text-muted-foreground">Feb 22, 2026</td>
-                              <td className="px-4 py-3 text-muted-foreground">-</td>
-                              <td className="px-4 py-3 text-muted-foreground">Cancelled</td>
-                            </tr>
-                          )}
+                          ))}
                         </tbody>
                       </table>
                     </div>
@@ -792,21 +975,25 @@ export default function UserPage() {
                 </div>
 
                 <div className="mt-6">
-                  <div className="flex flex-wrap gap-2">
-                    <Button
-                      variant={reviewTab === "written" ? "default" : "outline"}
-                      className={reviewTab === "written" ? "bg-rose-500 text-white hover:bg-rose-600" : ""}
-                      onClick={() => setReviewTab("written")}
-                    >
-                      Written Reviews
-                    </Button>
-                    <Button
-                      variant={reviewTab === "pending" ? "default" : "outline"}
-                      className={reviewTab === "pending" ? "bg-rose-500 text-white hover:bg-rose-600" : ""}
-                      onClick={() => setReviewTab("pending")}
-                    >
-                      Pending Reviews
-                    </Button>
+
+                  <div className="mt-4 flex flex-wrap items-center gap-3">
+                    <Input
+                      value={bookingSearch}
+                      onChange={(event) => { setBookingSearch(event.target.value); setBookingPage(0) }}
+                      placeholder="Search properties or users"
+                      className="w-full max-w-xs"
+                    />
+                    <Select value={reviewTab} onValueChange={(value) => { setReviewTab(value as "written" | "pending"); setReviewPage(0) }}>
+                      <SelectTrigger className="w-full max-w-[200px]">
+                        <SelectValue placeholder="Category" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="pending">Pending</SelectItem>
+                        <SelectItem value="past">Past</SelectItem>
+                        <SelectItem value="cancelled">Cancelled</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <div className="ml-auto text-xs text-muted-foreground">{"< "}{bookingRangeLabel}{" >"}</div>
                   </div>
 
                   <div className="mt-4 rounded-lg border border-border bg-card">
@@ -830,8 +1017,26 @@ export default function UserPage() {
                         </thead>
                         <tbody>
                           {reviewTab === "written" &&
-                            writtenReviews.map((review) => (
-                              <tr key={review.id} className="border-b border-border">
+                            reviewPageItems.map((review) => (
+                              <tr
+                                key={review.id}
+                                className="border-b border-border cursor-pointer"
+                                onClick={() =>
+                                  openReviewModal({
+                                    property: review.propertyName,
+                                    propertyId: review.propertyId,
+                                    hostId: review.hostId,
+                                    reviewerName: review.reviewerName,
+                                    date: review.reviewDate,
+                                    stars: review.stars,
+                                    rating: review.rating,
+                                    comment: review.comment,
+                                    checkIn: review.checkIn,
+                                    checkOut: review.checkOut,
+                                    ratings: review.ratings,
+                                  })
+                                }
+                              >
                                 <td className="px-4 py-3">
                                   <button
                                     className="font-medium text-rose-500 hover:text-rose-600"
@@ -907,8 +1112,26 @@ export default function UserPage() {
                             ))}
 
                           {reviewTab === "pending" &&
-                            pendingReviews.map((booking) => (
-                              <tr key={booking.id} className="border-b border-border">
+                            reviewPageItems.map((booking) => (
+                              <tr
+                                key={booking.id}
+                                className="border-b border-border cursor-pointer"
+                                onClick={() =>
+                                  openReviewModal({
+                                    property: booking.propertyName,
+                                    propertyId: booking.propertyId,
+                                    hostId: booking.hostId,
+                                    reviewerName: booking.reviewerName,
+                                    date: booking.reviewDate,
+                                    stars: booking.stars,
+                                    rating: booking.rating,
+                                    comment: booking.comment,
+                                    checkIn: booking.checkIn,
+                                    checkOut: booking.checkOut,
+                                    ratings: booking.ratings,
+                                  })
+                                }
+                              >
                                 <td className="px-4 py-3 font-medium text-foreground">{booking.propertyName}</td>
                                 <td className="px-4 py-3 text-right">
                                   <Button
@@ -991,35 +1214,25 @@ export default function UserPage() {
                   </Button>
                 </div>
 
-                <div className="mt-6 flex flex-wrap gap-2">
-                  <Button
-                    variant={transactionTab === "all" ? "default" : "outline"}
-                    className={transactionTab === "all" ? "bg-rose-500 text-white hover:bg-rose-600" : ""}
-                    onClick={() => setTransactionTab("all")}
-                  >
-                    All
-                  </Button>
-                  <Button
-                    variant={transactionTab === "payments" ? "default" : "outline"}
-                    className={transactionTab === "payments" ? "bg-rose-500 text-white hover:bg-rose-600" : ""}
-                    onClick={() => setTransactionTab("payments")}
-                  >
-                    Payments
-                  </Button>
-                  <Button
-                    variant={transactionTab === "deposits" ? "default" : "outline"}
-                    className={transactionTab === "deposits" ? "bg-rose-500 text-white hover:bg-rose-600" : ""}
-                    onClick={() => setTransactionTab("deposits")}
-                  >
-                    Deposits
-                  </Button>
-                  <Button
-                    variant={transactionTab === "withdrawals" ? "default" : "outline"}
-                    className={transactionTab === "withdrawals" ? "bg-rose-500 text-white hover:bg-rose-600" : ""}
-                    onClick={() => setTransactionTab("withdrawals")}
-                  >
-                    Withdrawals
-                  </Button>
+                <div className="mt-4 flex flex-wrap items-center gap-3">
+                  <Input
+                    value={paymentSearch}
+                    onChange={(event) => { setPaymentSearch(event.target.value); setPaymentPage(0) }}
+                    placeholder="Search username"
+                    className="w-full max-w-xs"
+                  />
+                  <Select value={transactionTab} onValueChange={(value) => { setTransactionTab(value as "all" | "payments" | "deposits" | "withdrawals"); setPaymentPage(0) }}>
+                    <SelectTrigger className="w-full max-w-[200px]">
+                      <SelectValue placeholder="Category" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All</SelectItem>
+                      <SelectItem value="payments">Payments</SelectItem>
+                      <SelectItem value="deposits">Deposits</SelectItem>
+                      <SelectItem value="withdrawals">Withdrawals</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <div className="ml-auto text-xs text-muted-foreground">{"< "}{paymentRangeLabel}{" >"}</div>
                 </div>
 
                 <div className="mt-4 rounded-lg border border-border bg-card">
@@ -1030,16 +1243,24 @@ export default function UserPage() {
                           <th className="px-4 py-3 font-medium">Type</th>
                           <th className="px-4 py-3 font-medium">Date</th>
                           <th className="px-4 py-3 font-medium">Amount</th>
+                          <th className="px-4 py-3 font-medium">To</th>
                           <th className="px-4 py-3 font-medium">Status</th>
                         </tr>
                       </thead>
                       <tbody>
-                        <tr className="border-b border-border">
-                          <td className="px-4 py-3 text-muted-foreground">Deposit</td>
-                          <td className="px-4 py-3 text-muted-foreground whitespace-nowrap">Mar 12, 2026</td>
-                          <td className="px-4 py-3 text-muted-foreground">Ksh 100.00</td>
-                          <td className="px-4 py-3 text-muted-foreground">Completed</td>
-                        </tr>
+                        {paymentPageItems.map((item) => (
+                          <tr
+                            key={item.id}
+                            className="border-b border-border cursor-pointer"
+                            onClick={() => setSelectedPayment(item)}
+                          >
+                            <td className="px-4 py-3 text-muted-foreground">{item.type}</td>
+                            <td className="px-4 py-3 text-muted-foreground whitespace-nowrap">{item.date}</td>
+                            <td className="px-4 py-3 text-muted-foreground">{item.amount}</td>
+                            <td className="px-4 py-3 text-muted-foreground">{item.to}</td>
+                            <td className="px-4 py-3 text-muted-foreground">{item.status}</td>
+                          </tr>
+                        ))}
                       </tbody>
                     </table>
                   </div>
@@ -1053,7 +1274,102 @@ export default function UserPage() {
                 <p className="mt-4 text-muted-foreground">Visit our help center for more information.</p>
               </div>
             )}
-          </section>
+          
+
+            {selectedBooking && (
+              <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+                <div className="w-full max-w-lg overflow-hidden rounded-2xl bg-background shadow-xl">
+                  <div className="p-5">
+                    <h3 className="text-lg font-semibold text-foreground">Booking ??????</h3>
+                    <div className="mt-3 space-y-2 text-sm text-muted-foreground">
+                      <p><span className="font-medium text-foreground">Property:</span> {selectedBooking.propertyName}</p>
+                      <p><span className="font-medium text-foreground">Status:</span> {selectedBooking.status}</p>
+                      <p><span className="font-medium text-foreground">Booking Date:</span> {selectedBooking.bookingDate}</p>
+                      <p><span className="font-medium text-foreground">Cost:</span> {selectedBooking.cost}</p>
+                      <p><span className="font-medium text-foreground">Check-in:</span> {selectedBooking.checkIn}</p>
+                      <p><span className="font-medium text-foreground">Check-out:</span> {selectedBooking.checkOut}</p>
+                      <p><span className="font-medium text-foreground">Rating:</span> {selectedBooking.rating}</p>
+                      <p><span className="font-medium text-foreground">Time Remaining:</span> {selectedBooking.timeRemaining}</p>
+                    </div>
+                    <div className="mt-6 flex justify-end gap-2">
+                      <Button variant="ghost" onClick={() => setSelectedBooking(null)}>
+                        Close
+                      </Button>
+                      <Button
+                        className="bg-rose-500 text-white hover:bg-rose-600"
+                        onClick={() => router.push(`/property/${selectedBooking.propertyId}`)}
+                      >
+                        View property
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {selectedPayment && (
+              <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+                <div className="w-full max-w-lg overflow-hidden rounded-2xl bg-background shadow-xl">
+                  <div className="p-5">
+                    <h3 className="text-lg font-semibold text-foreground">Payment Details</h3>
+                    <div className="mt-3 space-y-2 text-sm text-muted-foreground">
+                      <p><span className="font-medium text-foreground">Type:</span> {selectedPayment.type}</p>
+                      <p><span className="font-medium text-foreground">Date:</span> {selectedPayment.date}</p>
+                      <p><span className="font-medium text-foreground">Amount:</span> {selectedPayment.amount}</p>
+                      <p><span className="font-medium text-foreground">To:</span> {selectedPayment.to}</p>
+                      <p><span className="font-medium text-foreground">Status:</span> {selectedPayment.status}</p>
+                      <p><span className="font-medium text-foreground">Reference:</span> {selectedPayment.reference}</p>
+                    </div>
+                    <div className="mt-6 flex justify-end gap-2">
+                      <Button variant="ghost" onClick={() => setSelectedPayment(null)}>
+                        Close
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+            {selectedRecommendation && (
+              <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+                <div className="w-full max-w-lg overflow-hidden rounded-2xl bg-background shadow-xl">
+                  <div className="relative">
+                    <img
+                      src={selectedRecommendation.image}
+                      alt={selectedRecommendation.name}
+                      className="h-48 w-full object-cover"
+                    />
+                    <button
+                      onClick={() => setSelectedRecommendation(null)}
+                      className="absolute right-3 top-3 flex h-9 w-9 items-center justify-center rounded-full bg-black/60 text-white"
+                      aria-label="Close"
+                    >
+                      ×
+                    </button>
+                  </div>
+                  <div className="space-y-2 p-5">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-lg font-semibold text-foreground">Recommended stay</h3>
+                      <span className="rounded-full bg-rose-500/10 px-3 py-1 text-xs font-semibold text-rose-600">
+                        {selectedRecommendation.rating.toFixed(1)} ★
+                      </span>
+                    </div>
+                    <p className="text-base font-semibold text-foreground">{selectedRecommendation.name}</p>
+                    <p className="text-sm text-muted-foreground">{selectedRecommendation.description}</p>
+                    <div className="flex justify-end gap-2 pt-2">
+                      <Button variant="ghost" onClick={() => setSelectedRecommendation(null)}>
+                        Not now
+                      </Button>
+                      <Button
+                        className="bg-rose-500 text-white hover:bg-rose-600"
+                        onClick={() => router.push(`/property/${selectedRecommendation.id}`)}
+                      >
+                        View property
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}</section>
         </div>
       </div>
 
