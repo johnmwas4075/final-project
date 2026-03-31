@@ -4,6 +4,7 @@ import { Analytics } from '@vercel/analytics/next'
 import './globals.css'
 import { NavbarWrapper } from '@/components/navbar-wrapper'
 import { ChatbotWrapper } from "@/components/chatbot-wrapper"
+import { RouteTracker } from "@/components/route-tracker"
 
 const _geist = Geist({ subsets: ["latin"] });
 const _geistMono = Geist_Mono({ subsets: ["latin"] });
@@ -40,6 +41,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`font-sans antialiased ${_brandFont.variable}`}>
+        <RouteTracker />
         <NavbarWrapper />
         {children}
         <ChatbotWrapper />

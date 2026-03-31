@@ -6,6 +6,8 @@ import { X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 
 const AUTH_KEY = "authUserId"
+const SKIP_KEY = "skipRecOnce"
+const PREV_KEY = "routePrev"
 
 interface RecommendationItem {
   id: string
@@ -23,6 +25,21 @@ export function RecommendationPopup() {
 
   useEffect(() => {
     if (hasShown) return
+    if (typeof window !== "undefined") {
+      const skipOnce = window.sessionStorage.getItem(SKIP_KEY)
+      if (skipOnce === "1") {
+        window.sessionStorage.removeItem(SKIP_KEY)
+        setHasShown(true)
+        return
+      }
+      const prevPath = window.sessionStorage.getItem(PREV_KEY) || ""
+      const cameFromHostOrUser = prevPath.startsWith("/host") || prevPath.startsWith("/userpage")
+      const isFreshVisit = prevPath === "" || prevPath === "/"
+      if (!cameFromHostOrUser && !isFreshVisit) {
+        setHasShown(true)
+        return
+      }
+    }
     const userId = typeof window !== "undefined" ? window.localStorage.getItem(AUTH_KEY) : null
     const url = userId ? `/api/recommendations?userId=${encodeURIComponent(userId)}` : "/api/recommendations"
     fetch(url)

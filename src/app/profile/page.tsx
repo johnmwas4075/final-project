@@ -119,7 +119,7 @@ export default function ProfilePage() {
     const userId = window.localStorage.getItem(AUTH_KEY);
     const storedName = window.localStorage.getItem(AUTH_NAME_KEY);
     if (!userId) {
-      router.replace("/login");
+      router.replace("/");
       return;
     }
 
@@ -198,7 +198,7 @@ export default function ProfilePage() {
       window.localStorage.removeItem(AUTH_KEY);
       window.localStorage.removeItem(AUTH_NAME_KEY);
     }
-    router.push("/login");
+    router.push("/");
   };
 
   const saveProfile = async (

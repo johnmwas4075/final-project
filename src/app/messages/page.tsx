@@ -175,7 +175,7 @@ export default function MessagesPage() {
       window.localStorage.removeItem(AUTH_KEY)
       window.localStorage.removeItem(AUTH_NAME_KEY)
     }
-    router.push("/login")
+    router.push("/")
   }
 
   const handleBecomeHost = () => {

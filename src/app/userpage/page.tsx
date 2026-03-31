@@ -161,7 +161,7 @@ export default function UserPage() {
     const isAuthed = Boolean(window.localStorage.getItem(AUTH_KEY))
     const storedName = window.localStorage.getItem(AUTH_NAME_KEY)
     if (!isAuthed) {
-      router.replace("/login")
+      router.replace("/")
       return
     }
     const storedPhone = window.localStorage.getItem(AUTH_PHONE_KEY)
@@ -272,7 +272,7 @@ export default function UserPage() {
       window.localStorage.removeItem(AUTH_KEY)
       window.localStorage.removeItem(AUTH_NAME_KEY)
     }
-    router.push("/login")
+    router.push("/")
   }
 
   const openReviewModal = (review: {

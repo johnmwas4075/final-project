@@ -176,7 +176,7 @@ export default function HostPage() {
     const storedName = window.localStorage.getItem(AUTH_NAME_KEY)
     const storedUserId = window.localStorage.getItem(AUTH_KEY)
     if (!isAuthed) {
-      router.replace("/login")
+      router.replace("/")
       return
     }
     if (storedName) setFirstName(storedName)
@@ -359,7 +359,7 @@ export default function HostPage() {
       window.localStorage.removeItem(AUTH_KEY)
       window.localStorage.removeItem(AUTH_NAME_KEY)
     }
-    router.push("/login")
+    router.push("/")
   }
 
   if (!isReady) return null

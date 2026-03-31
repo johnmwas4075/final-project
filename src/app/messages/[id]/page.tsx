@@ -174,7 +174,7 @@ export default function MessageThreadPage() {
       window.localStorage.removeItem(AUTH_KEY)
       window.localStorage.removeItem(AUTH_NAME_KEY)
     }
-    router.push("/login")
+    router.push("/")
   }
 
   const handleInputResize = () => {

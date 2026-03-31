@@ -115,7 +115,7 @@ export default function NotificationsPage() {
       window.localStorage.removeItem(AUTH_KEY)
       window.localStorage.removeItem(AUTH_NAME_KEY)
     }
-    router.push("/login")
+    router.push("/")
   }
 
   const handleBecomeHost = () => {

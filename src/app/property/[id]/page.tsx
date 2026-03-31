@@ -7,6 +7,7 @@ import { BookingWidget } from "@/components/property/booking-widget"
 import { Ratings } from "@/components/property/ratings"
 import { Reviews } from "@/components/property/reviews"
 import { TouristLocations } from "@/components/property/tourist-locations"
+import { RecommendationSkipMarker } from "@/components/recommendation-skip-marker"
 import { getPrisma } from "@/lib/prisma"
 
 const getLocationLabel = (county?: string | null, constituency?: string | null, ward?: string | null) => {
@@ -98,6 +99,7 @@ export default async function PropertyPage({
   if (!property) {
     return (
       <main className="min-h-screen bg-background">
+      <RecommendationSkipMarker />
         <div className="mx-auto max-w-3xl px-4 py-12 text-center">
           <h1 className="text-2xl font-semibold text-foreground">Property not found</h1>
           <p className="mt-2 text-sm text-muted-foreground">
@@ -110,6 +112,7 @@ export default async function PropertyPage({
 
   return (
     <main className="min-h-screen bg-background">
+      <RecommendationSkipMarker />
       {/* Photo Gallery - Full Width */}
       <div className="mx-auto max-w-7xl px-4 pt-6 sm:px-6 lg:px-8">
         <PhotoGallery photos={property.photos} propertyName={property.name} />

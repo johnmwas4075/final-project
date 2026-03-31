@@ -88,7 +88,7 @@ export function Navbar() {
     }
     setIsAuthed(false)
     setFirstName("")
-    router.push("/login")
+    router.push("/")
   }
 
   useEffect(() => {
