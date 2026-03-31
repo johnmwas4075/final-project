@@ -27,8 +27,24 @@ export function ChatbotWidget() {
   const [input, setInput] = useState("")
   const [userId, setUserId] = useState<string | null>(null)
   const [sending, setSending] = useState(false)
+  const [isThinking, setIsThinking] = useState(false)
   const [suggestionIndex, setSuggestionIndex] = useState(0)
   const listRef = useRef<HTMLDivElement | null>(null)
+
+  const renderMessageContent = (content: string) => {
+    const parts = content.split(/(\[[^\]]+\]\([^\)]+\))/g)
+    return parts.map((part, index) => {
+      const match = part.match(/^\[([^\]]+)\]\(([^\)]+)\)$/)
+      if (match) {
+        return (
+          <Link key={`link-${index}`} href={match[2]} className="text-rose-600 underline">
+            {match[1]}
+          </Link>
+        )
+      }
+      return <span key={`text-${index}`}>{part}</span>
+    })
+  }
 
   const suggestion = useMemo(() => SUGGESTIONS[suggestionIndex % SUGGESTIONS.length], [suggestionIndex])
 
@@ -44,7 +60,7 @@ export function ChatbotWidget() {
         {
           id: "welcome",
           role: "BOT",
-          content: "Log in to chat with me and save your conversation.",
+          content: "You're chatting as a guest. Messages won't be saved, but I'm happy to help.",
         },
       ])
       return
@@ -94,9 +110,9 @@ export function ChatbotWidget() {
   const handleSend = async () => {
     const trimmed = input.trim()
     if (!trimmed || sending) return
-    if (!userId) return
     setInput("")
     setSending(true)
+    setIsThinking(true)
 
     const optimistic: ChatMessage = {
       id: `local-${Date.now()}`,
@@ -109,7 +125,7 @@ export function ChatbotWidget() {
       const res = await fetch("/api/chatbot", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId, message: trimmed }),
+        body: JSON.stringify(userId ? { userId, message: trimmed } : { message: trimmed }),
       })
       const data = await res.json()
       if (data?.userMessage && data?.botMessage) {
@@ -126,6 +142,7 @@ export function ChatbotWidget() {
       ])
     } finally {
       setSending(false)
+      setIsThinking(false)
     }
   }
 
@@ -189,12 +206,27 @@ export function ChatbotWidget() {
                     {message.role === "USER" ? "You" : "Bot"}
                   </span>
                   <div className="rounded-2xl border border-border bg-card px-3 py-2 text-sm text-foreground whitespace-pre-line">
-                    {message.content}
+                    {renderMessageContent(message.content)}
                   </div>
                 </div>
               </div>
             ))}
 
+            {isThinking && (
+              <div className="flex items-start gap-3">
+                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-rose-500/10 text-xs font-semibold text-rose-600">B</div>
+                <div className="flex max-w-[70%] flex-col gap-1">
+                  <span className="text-xs font-semibold text-muted-foreground">Bot</span>
+                  <div className="rounded-2xl border border-border bg-card px-3 py-2 text-sm text-foreground">
+                    <span className="inline-flex items-center gap-1">
+                      <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-muted-foreground [animation-delay:0ms]" />
+                      <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-muted-foreground [animation-delay:120ms]" />
+                      <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-muted-foreground [animation-delay:240ms]" />
+                    </span>
+                  </div>
+                </div>
+              </div>
+            )}
             {messages.length === 0 && (
               <div className="rounded-xl border border-dashed border-border p-4 text-center text-sm text-muted-foreground">
                 Ask me about tourist places, Dwellify stays, or how to use the system.
@@ -203,39 +235,38 @@ export function ChatbotWidget() {
           </div>
 
           <div className="border-t border-border p-3">
-            {!userId ? (
-              <div className="text-center text-xs text-muted-foreground">
-                Please{" "}
-                <Link href="/login" className="text-rose-600 underline">
-                  log in
-                </Link>{" "}
-                to chat and save your conversation.
-              </div>
-            ) : (
-              <div className="flex items-center gap-2">
-                <input
-                  type="text"
-                  value={input}
-                  onChange={(event) => setInput(event.target.value)}
-                  onKeyDown={(event) => {
-                    if (event.key === "Enter") {
-                      event.preventDefault()
-                      handleSend()
-                    }
-                  }}
-                  placeholder="Ask me anything..."
-                  className="h-10 flex-1 rounded-full border border-border bg-background px-4 text-sm outline-none focus:border-rose-500/70"
-                />
-                <button
-                  type="button"
-                  onClick={handleSend}
-                  disabled={sending}
-                  className="h-10 rounded-full bg-rose-500 px-4 text-sm font-semibold text-white hover:bg-rose-600 disabled:opacity-60"
-                >
-                  Send
-                </button>
+            {!userId && (
+              <div className="mb-2 text-center text-xs text-muted-foreground">
+                You're in guest mode. Messages won't be saved.
+                <Link href="/login" className="ml-1 text-rose-600 underline">
+                  Log in
+                </Link>
+                to save your chat.
               </div>
             )}
+            <div className="flex items-center gap-2">
+              <input
+                type="text"
+                value={input}
+                onChange={(event) => setInput(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter") {
+                    event.preventDefault()
+                    handleSend()
+                  }
+                }}
+                placeholder={userId ? "Ask me anything..." : "Ask me anything (guest mode)..."}
+                className="h-10 flex-1 rounded-full border border-border bg-background px-4 text-sm outline-none focus:border-rose-500/70"
+              />
+              <button
+                type="button"
+                onClick={handleSend}
+                disabled={sending}
+                className="h-10 rounded-full bg-rose-500 px-4 text-sm font-semibold text-white hover:bg-rose-600 disabled:opacity-60"
+              >
+                Send
+              </button>
+            </div>
           </div>
         </div>
       )}

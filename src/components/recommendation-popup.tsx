@@ -33,9 +33,8 @@ export function RecommendationPopup() {
         return
       }
       const prevPath = window.sessionStorage.getItem(PREV_KEY) || ""
-      const cameFromHostOrUser = prevPath.startsWith("/host") || prevPath.startsWith("/userpage")
       const isFreshVisit = prevPath === "" || prevPath === "/"
-      if (!cameFromHostOrUser && !isFreshVisit) {
+      if (!isFreshVisit) {
         setHasShown(true)
         return
       }

@@ -28,6 +28,80 @@ const buildFallback = () =>
     "- Navigating the system (example: \"How do I book a place?\")",
   ].join("\n")
 
+const computeRating = (reviews: { stars: number }[]) => {
+  if (!reviews || reviews.length === 0) return 0
+  const total = reviews.reduce((sum, review) => sum + (review.stars || 0), 0)
+  return Number((total / reviews.length).toFixed(2))
+}
+
+const getRecommendations = async (prisma: ReturnType<typeof getPrisma>, userId?: string) => {
+  if (!prisma) return []
+  if (userId) {
+    const recs = await prisma.recommendation.findMany({
+      where: { userId },
+      orderBy: { score: "desc" },
+      take: 5,
+      include: {
+        property: {
+          select: {
+            id: true,
+            propertyName: true,
+            countyName: true,
+            price: true,
+            rooms: true,
+            photos: true,
+            reviews: { select: { stars: true } },
+          },
+        },
+      },
+    })
+    return recs.map((rec) => ({
+      id: rec.property.id,
+      name: rec.property.propertyName,
+      county: rec.property.countyName ?? "",
+      price: rec.property.price ?? 0,
+      rooms: rec.property.rooms ?? 0,
+      rating: computeRating(rec.property.reviews),
+    }))
+  }
+
+  const fallback = await prisma.property.findMany({
+    orderBy: { createdAt: "desc" },
+    take: 5,
+    select: {
+      id: true,
+      propertyName: true,
+      countyName: true,
+      price: true,
+      rooms: true,
+      reviews: { select: { stars: true } },
+    },
+  })
+  return fallback.map((property) => ({
+    id: property.id,
+    name: property.propertyName,
+    county: property.countyName ?? "",
+    price: property.price ?? 0,
+    rooms: property.rooms ?? 0,
+    rating: computeRating(property.reviews),
+  }))
+}
+
+const buildSystemPrompt = (recs: { id: string; name: string; county: string; price: number; rooms: number; rating: number }[]) => {
+  const lines = recs.map((rec) => `- ${rec.name} | ${rec.county || "Kenya"} | ${rec.rooms} rooms | KES ${Math.round(rec.price)} | rating ${rec.rating}`)
+  const recSection = lines.length > 0 ? lines.join("\n") : "- No recommendations available"
+  return [
+    "You are the Dwellify assistant.",
+    "Be conversational and direct.",
+    "Only help with Airbnb-style topics: bookings, stays, hosts/guests, payments, reviews, and tourist places in Kenya.",
+    "If asked about anything outside this scope, politely refuse and redirect to Dwellify topics.",
+    "Use the recommendations below to suggest places when relevant.",
+    "Never reveal internal IDs, tokens, or database identifiers.",
+    "Recommendations:",
+    recSection,
+  ].join("\n")
+}
+
 const pickCounty = async (message: string, prisma: ReturnType<typeof getPrisma>) => {
   if (!prisma) return null
   const tokens = tokenCandidates(message)
@@ -52,6 +126,46 @@ const pickPropertyCounty = async (message: string, prisma: ReturnType<typeof get
     if (match?.countyName) return match.countyName
   }
   return null
+}
+
+const linkifyProperties = (reply: string, recs: { id: string; name: string }[]) => {
+  let output = reply
+  const escapeRegex = (value: string) => value.replace(/[.*+?^${}()|[\\]\\]/g, "\\$&")
+  for (const rec of recs) {
+    if (!rec?.name) continue
+    const safeName = escapeRegex(rec.name)
+    const re = new RegExp(`\\b${safeName}\\b`, "gi")
+    output = output.replace(re, `[${rec.name}](/property/${rec.id})`)
+  }
+  return output
+}
+
+const callCerebras = async (messages: { role: string; content: string }[]) => {
+  const apiKey = process.env.CEREBRAS_API_KEY
+  if (!apiKey) {
+    throw new Error("CEREBRAS_API_KEY not set")
+  }
+  const res = await fetch("https://api.cerebras.ai/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${apiKey}`,
+    },
+    body: JSON.stringify({
+      model: "llama3.1-8b",
+      messages,
+      temperature: 0.6,
+      max_tokens: 400,
+    }),
+  })
+  if (!res.ok) {
+    const text = await res.text().catch(() => "")
+    throw new Error(`Cerebras error: ${res.status} ${text}`)
+  }
+  const data = await res.json()
+  const content = data?.choices?.[0]?.message?.content
+  if (!content) throw new Error("No content from Cerebras")
+  return String(content)
 }
 
 const buildBotReply = async (message: string, prisma: ReturnType<typeof getPrisma>, userId?: string) => {
@@ -146,11 +260,37 @@ export async function POST(req: Request) {
   }
   const userId = body.userId?.trim()
   const message = body.message?.trim()
-  if (!userId || !message) {
-    return NextResponse.json({ error: "userId and message are required" }, { status: 400 })
+  if (!message) {
+    return NextResponse.json({ error: "message is required" }, { status: 400 })
   }
 
   try {
+    const recs = await getRecommendations(prisma, userId || undefined)
+    const systemPrompt = buildSystemPrompt(recs)
+    const llmMessages = [
+      { role: "system", content: systemPrompt },
+      { role: "user", content: message },
+    ]
+
+    let reply: string
+    try {
+      reply = await callCerebras(llmMessages)
+    } catch (err) {
+      console.error("chatbot LLM error", err)
+      reply = await buildBotReply(message, prisma, userId || undefined)
+    }
+
+    reply = linkifyProperties(reply, recs)
+
+    if (!userId) {
+      const now = new Date().toISOString()
+      return NextResponse.json({
+        userMessage: { id: `guest-${Date.now()}`, role: "USER", content: message, createdAt: now },
+        botMessage: { id: `guest-bot-${Date.now()}`, role: "BOT", content: reply, createdAt: now },
+        ephemeral: true,
+      })
+    }
+
     const userMessage = await prisma.chatbotMessage.create({
       data: {
         userId,
@@ -159,7 +299,6 @@ export async function POST(req: Request) {
       },
     })
 
-    const reply = await buildBotReply(message, prisma, userId)
     const botMessage = await prisma.chatbotMessage.create({
       data: {
         userId,
