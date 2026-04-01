@@ -28,6 +28,7 @@ export async function GET(request: Request) {
       guests: true,
       minNights: true,
       photos: true,
+      photoMeta: true,
       amenities: true,
       countyName: true,
       constituencyName: true,
@@ -61,6 +62,7 @@ export async function PUT(request: Request) {
     guests,
     minNights,
     photos,
+    photoMeta,
     amenities,
     countyName,
     constituencyName,
@@ -90,7 +92,8 @@ export async function PUT(request: Request) {
       bathrooms: typeof bathrooms === "number" ? bathrooms : Number(bathrooms),
       guests: typeof guests === "number" ? guests : Number(guests),
       minNights: typeof minNights === "number" ? minNights : Number(minNights),
-      photos: Array.isArray(photos) ? photos.map(String) : undefined,
+      photos: Array.isArray(photoMeta) ? photoMeta.map((item) => String(item?.url ?? item)) : Array.isArray(photos) ? photos.map(String) : undefined,
+      photoMeta: Array.isArray(photoMeta) ? photoMeta : undefined,
       amenities: amenities ?? undefined,
       countyName: typeof countyName === "string" ? countyName : undefined,
       constituencyName: typeof constituencyName === "string" ? constituencyName : undefined,
@@ -106,6 +109,7 @@ export async function PUT(request: Request) {
       guests: true,
       minNights: true,
       photos: true,
+      photoMeta: true,
       amenities: true,
       countyName: true,
       constituencyName: true,
@@ -137,6 +141,7 @@ export async function POST(request: Request) {
     guests,
     minNights,
     photos,
+    photoMeta,
     amenities,
     countyName,
     constituencyName,
@@ -147,7 +152,12 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
   }
 
-  if (!Array.isArray(photos) || photos.length < 5 || photos.length > 10) {
+  const photoList = Array.isArray(photoMeta)
+    ? photoMeta.map((item: any) => String(item?.url ?? item))
+    : Array.isArray(photos)
+      ? photos.map(String)
+      : []
+  if (photoList.length < 5 || photoList.length > 10) {
     return NextResponse.json({ error: "Photos must be between 5 and 10 images" }, { status: 400 })
   }
 
@@ -182,7 +192,8 @@ export async function POST(request: Request) {
       bathrooms: Number(bathrooms),
       guests: Number(guests),
       minNights: Number(minNights),
-      photos: photos.map(String),
+      photos: photoList,
+      photoMeta: Array.isArray(photoMeta) ? photoMeta : undefined,
       amenities: amenities ?? [],
       countyName: typeof countyName === "string" ? countyName : null,
       constituencyName: typeof constituencyName === "string" ? constituencyName : null,
@@ -202,6 +213,7 @@ export async function POST(request: Request) {
       guests: true,
       minNights: true,
       photos: true,
+      photoMeta: true,
       amenities: true,
       countyName: true,
       constituencyName: true,

@@ -38,11 +38,12 @@ export async function POST(req: Request) {
 
     const data = await res.json()
     const url = data?.data?.url
+    const deleteUrl = data?.data?.delete_url
     if (!url) {
       return NextResponse.json({ error: "ImageBB did not return a URL" }, { status: 500 })
     }
 
-    return NextResponse.json({ url })
+    return NextResponse.json({ url, deleteUrl })
   } catch (error) {
     return NextResponse.json({ error: "Failed to upload image" }, { status: 500 })
   }

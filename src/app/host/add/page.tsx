@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
-import { Menu } from "lucide-react"
+import { Menu, Trash2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
@@ -69,6 +69,7 @@ export default function HostAddPage() {
     progress: number
     status: "uploading" | "uploaded" | "error"
     url?: string
+    deleteUrl?: string
     error?: string
   }
   const [images, setImages] = useState<string[]>([])
@@ -95,7 +96,7 @@ export default function HostAddPage() {
   }
 
   const uploadSingle = (item: UploadItem) =>
-    new Promise<string>((resolve, reject) => {
+    new Promise<{ url: string; deleteUrl?: string }>((resolve, reject) => {
       const xhr = new XMLHttpRequest()
       xhr.open("POST", "/api/uploads/imagebb")
       xhr.upload.onprogress = (event) => {
@@ -114,11 +115,11 @@ export default function HostAddPage() {
             setUploadItems((prev) =>
               prev.map((it) =>
                 it.id == item.id
-                  ? { ...it, status: "uploaded", progress: 100, url: String(data.url) }
+                  ? { ...it, status: "uploaded", progress: 100, url: String(data.url), deleteUrl: data?.deleteUrl ? String(data.deleteUrl) : undefined }
                   : it
               )
             )
-            resolve(String(data.url))
+            resolve({ url: String(data.url), deleteUrl: data?.deleteUrl ? String(data.deleteUrl) : undefined })
             return
           }
           const message = data?.error || `Upload failed (${xhr.status})`
@@ -150,11 +151,33 @@ export default function HostAddPage() {
       xhr.send(formData)
     })
 
+  const removeUploadItem = async (id: string) => {
+    const item = uploadItems.find((it) => it.id === id)
+    setUploadItems((prev) => prev.filter((it) => it.id !== id))
+    if (item?.url) {
+      setImages((prev) => prev.filter((url) => url !== item.url))
+    }
+    if (item?.deleteUrl) {
+      try {
+        await fetch("/api/uploads/imagebb/delete", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ deleteUrl: item.deleteUrl }),
+        })
+      } catch {
+        // best-effort delete
+      }
+    }
+  }
+
   const handleFileUpload = async (files: FileList | null) => {
     if (!files) return
-    const selected = Array.from(files)
+    let selected = Array.from(files)
+    if (selected.length > 10) {
+      selected = selected.slice(0, 10)
+    }
     const total = selected.length
-    if (total < 5 || total > 10) {
+    if (total < 5) {
       setError("Please upload between 5 and 10 images.")
       setImages([])
       setUploadItems([])
@@ -172,7 +195,7 @@ export default function HostAddPage() {
     setIsUploadingImages(true)
     try {
       const uploads = await Promise.all(items.map((item) => uploadSingle(item)))
-      setImages(uploads)
+      setImages(uploads.map((item) => item.url))
     } catch (err: any) {
       setError(err?.message || "Unable to upload images.")
       const uploaded = uploadItems.filter((item) => item.status == "uploaded" && item.url).map((item) => item.url!)
@@ -192,10 +215,10 @@ export default function HostAddPage() {
       prev.map((it) => (it.id == id ? { ...it, status: "uploading", progress: 0, error: null } : it))
     )
     try {
-      const url = await uploadSingle(item)
+      const result = await uploadSingle(item)
       setImages((prev) => {
-        if (prev.includes(url)) return prev
-        return [...prev, url]
+        if (prev.includes(result.url)) return prev
+        return [...prev, result.url]
       })
     } finally {
       setIsUploadingImages(false)
@@ -235,6 +258,7 @@ export default function HostAddPage() {
       guests: Number(guests),
       minNights: Number(minNights),
       photos: images,
+      photoMeta: uploadItems.filter((item) => item.status == "uploaded" && item.url).map((item) => ({ url: item.url, deleteUrl: item.deleteUrl })),
       amenities: amenityOptions.map((amenity) => ({
         ...amenity,
         available: Boolean(amenities[amenity.key]),
@@ -425,8 +449,21 @@ export default function HostAddPage() {
                   <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3">
                     {uploadItems.length > 0 ? (
                       uploadItems.map((item) => (
-                        <div key={item.id} className="relative h-24 overflow-hidden rounded-md border border-border bg-muted/20">
+                        <div key={item.id} className="group relative h-24 overflow-hidden rounded-md border border-border bg-muted/20">
                           <img src={item.preview} alt="Upload preview" className="h-full w-full object-cover" />
+                          {item.status === "uploaded" && (
+                            <div className="absolute bottom-2 left-2 flex h-5 w-5 items-center justify-center rounded-full bg-emerald-500 text-[10px] font-bold text-white">
+                              ?
+                            </div>
+                          )}
+                          <button
+                            type="button"
+                            aria-label="Remove image"
+                            onClick={() => removeUploadItem(item.id)}
+                            className="absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-full bg-black/60 text-white opacity-100 transition-opacity sm:opacity-0 sm:group-hover:opacity-100"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
                           {item.status === "uploading" && (
                             <div className="absolute inset-0 flex items-center justify-center bg-black/40 text-xs text-white">
                               {item.progress}%

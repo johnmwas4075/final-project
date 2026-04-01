@@ -71,6 +71,7 @@ model Property {
   price                   Float
   guests                  Int
   photos                  String[]
+  photoMeta               Json?                @map("photoMeta")
   amenities               Json
   countyId                String                @map("countyId")
   subCountyId             String                @map("subCountyId")
