@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server"
 import { getPrisma } from "@/lib/prisma"
 
+export const runtime = "nodejs"
+
 const MAX_MESSAGES = 50
 
 const normalize = (value: string) => value.toLowerCase()

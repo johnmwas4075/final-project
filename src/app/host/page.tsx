@@ -124,7 +124,18 @@ export default function HostPage() {
     description: "",
   })
   const [editAmenities, setEditAmenities] = useState<Record<string, boolean>>({})
+  type UploadItem = {
+    id: string
+    file: File
+    preview: string
+    progress: number
+    status: "uploading" | "uploaded" | "error"
+    url?: string
+    error?: string
+  }
   const [editImages, setEditImages] = useState<string[]>([])
+  const [uploadItems, setUploadItems] = useState<UploadItem[]>([])
+  const [isUploadingImages, setIsUploadingImages] = useState(false)
   const [newImages, setNewImages] = useState<File[]>([])
   const [imageError, setImageError] = useState<string>("")
   const weekDays = [
@@ -647,6 +658,77 @@ export default function HostPage() {
       }, {})
     )
     setIsPropertyModalOpen(true)
+  }
+
+  const uploadSingle = (item: UploadItem) =>
+    new Promise<string>((resolve, reject) => {
+      const xhr = new XMLHttpRequest()
+      xhr.open("POST", "/api/uploads/imagebb")
+      xhr.upload.onprogress = (event) => {
+        if (!event.lengthComputable) return
+        const progress = Math.round((event.loaded / event.total) * 100)
+        setUploadItems((prev) =>
+          prev.map((it) =>
+            it.id === item.id ? { ...it, progress, status: "uploading" } : it
+          )
+        )
+      }
+      xhr.onload = () => {
+        try {
+          const data = JSON.parse(xhr.responseText || "{}")
+          if (xhr.status >= 200 && xhr.status < 300 && data?.url) {
+            setUploadItems((prev) =>
+              prev.map((it) =>
+                it.id === item.id
+                  ? { ...it, status: "uploaded", progress: 100, url: String(data.url) }
+                  : it
+              )
+            )
+            resolve(String(data.url))
+            return
+          }
+          const message = data?.error || `Upload failed (${xhr.status})`
+          setUploadItems((prev) =>
+            prev.map((it) =>
+              it.id === item.id ? { ...it, status: "error", error: message } : it
+            )
+          )
+          reject(new Error(message))
+        } catch (err) {
+          setUploadItems((prev) =>
+            prev.map((it) =>
+              it.id === item.id ? { ...it, status: "error", error: "Upload failed" } : it
+            )
+          )
+          reject(err)
+        }
+      }
+      xhr.onerror = () => {
+        setUploadItems((prev) =>
+          prev.map((it) =>
+            it.id === item.id ? { ...it, status: "error", error: "Network error" } : it
+          )
+        )
+        reject(new Error("Network error"))
+      }
+      const formData = new FormData()
+      formData.append("image", item.file)
+      xhr.send(formData)
+    })
+
+  const retryUpload = async (id: string) => {
+    const item = uploadItems.find((it) => it.id === id)
+    if (!item) return
+    setIsUploadingImages(true)
+    setUploadItems((prev) =>
+      prev.map((it) => (it.id === id ? { ...it, status: "uploading", progress: 0, error: undefined } : it))
+    )
+    try {
+      const url = await uploadSingle(item)
+      setEditImages((prev) => (prev.includes(url) ? prev : [...prev, url]))
+    } finally {
+      setIsUploadingImages(false)
+    }
   }
 
   const savePropertyChanges = async () => {
@@ -1957,7 +2039,7 @@ export default function HostPage() {
                   type="file"
                   accept="image/png,image/jpeg,image/jpg,image/webp"
                   multiple
-                  onChange={(event) => {
+                  onChange={async (event) => {
                     const files = Array.from(event.target.files ?? [])
                     const total = editImages.length + files.length
                     if (total < 5 || total > 10) {
@@ -1966,18 +2048,57 @@ export default function HostPage() {
                       return
                     }
                     setImageError("")
-                    setNewImages(files)
-                    const previews = files.map((file) => URL.createObjectURL(file))
-                    setEditImages((prev) => [...prev, ...previews])
+                    const items = files.map((file, index) => ({
+                      id: `${Date.now()}-${index}`,
+                      file,
+                      preview: URL.createObjectURL(file),
+                      progress: 0,
+                      status: "uploading",
+                    }))
+                    setUploadItems(items)
+                    setIsUploadingImages(true)
+                    try {
+                      const uploads = await Promise.all(items.map((item) => uploadSingle(item)))
+                      setEditImages((prev) => [...prev, ...uploads])
+                    } catch (err: any) {
+                      setImageError(err?.message || "Unable to upload images.")
+                    } finally {
+                      setIsUploadingImages(false)
+                    }
                   }}
                   className="mt-2 w-full text-sm text-muted-foreground"
                 />
                 <p className="mt-1 text-xs text-muted-foreground">Minimum 5 images, maximum 10 images. JPG, PNG, JPEG, or WebP.</p>
+                {isUploadingImages ? <p className="mt-1 text-xs text-amber-600">Uploading images...</p> : null}
                 {imageError ? <p className="mt-1 text-xs text-red-500">{imageError}</p> : null}
               </div>
               <div className="md:col-span-2">
                 <label className="text-sm font-medium text-foreground">Current Images</label>
                 <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3">
+                  {uploadItems.map((item) => (
+                    <div key={item.id} className="relative h-24 overflow-hidden rounded-md border border-border bg-muted/20">
+                      <img src={item.preview} alt="Upload preview" className="h-full w-full object-cover" />
+                      {item.status === "uploading" && (
+                        <div className="absolute inset-0 flex items-center justify-center bg-black/40 text-xs text-white">
+                          {item.progress}%
+                        </div>
+                      )}
+                      {item.status === "error" && (
+                        <button
+                          type="button"
+                          onClick={() => retryUpload(item.id)}
+                          className="absolute inset-0 flex items-center justify-center bg-black/60 text-xs font-semibold text-white"
+                        >
+                          Retry
+                        </button>
+                      )}
+                      {item.status === "uploaded" && (
+                        <div className="absolute inset-x-0 bottom-0 bg-black/40 px-1 py-0.5 text-[10px] text-white">
+                          Uploaded
+                        </div>
+                      )}
+                    </div>
+                  ))}
                   {editImages.map((src, index) => (
                     <div
                       key={`${src}-${index}`}

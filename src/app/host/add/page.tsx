@@ -62,7 +62,18 @@ export default function HostAddPage() {
   const [county, setCounty] = useState("")
   const [constituency, setConstituency] = useState("")
   const [ward, setWard] = useState("")
+  type UploadItem = {
+    id: string
+    file: File
+    preview: string
+    progress: number
+    status: "uploading" | "uploaded" | "error"
+    url?: string
+    error?: string
+  }
   const [images, setImages] = useState<string[]>([])
+  const [isUploadingImages, setIsUploadingImages] = useState(false)
+  const [uploadItems, setUploadItems] = useState<UploadItem[]>([])
   const [amenities, setAmenities] = useState<Record<string, boolean>>({})
 
   useEffect(() => {
@@ -83,17 +94,112 @@ export default function HostAddPage() {
     router.push("/host")
   }
 
-  const handleFileUpload = (files: FileList | null) => {
+  const uploadSingle = (item: UploadItem) =>
+    new Promise<string>((resolve, reject) => {
+      const xhr = new XMLHttpRequest()
+      xhr.open("POST", "/api/uploads/imagebb")
+      xhr.upload.onprogress = (event) => {
+        if (!event.lengthComputable) return
+        const progress = Math.round((event.loaded / event.total) * 100)
+        setUploadItems((prev) =>
+          prev.map((it) =>
+            it.id == item.id ? { ...it, progress, status: "uploading" } : it
+          )
+        )
+      }
+      xhr.onload = () => {
+        try {
+          const data = JSON.parse(xhr.responseText || "{}")
+          if (xhr.status >= 200 && xhr.status < 300 && data?.url) {
+            setUploadItems((prev) =>
+              prev.map((it) =>
+                it.id == item.id
+                  ? { ...it, status: "uploaded", progress: 100, url: String(data.url) }
+                  : it
+              )
+            )
+            resolve(String(data.url))
+            return
+          }
+          const message = data?.error || `Upload failed (${xhr.status})`
+          setUploadItems((prev) =>
+            prev.map((it) =>
+              it.id == item.id ? { ...it, status: "error", error: message } : it
+            )
+          )
+          reject(new Error(message))
+        } catch (err) {
+          setUploadItems((prev) =>
+            prev.map((it) =>
+              it.id == item.id ? { ...it, status: "error", error: "Upload failed" } : it
+            )
+          )
+          reject(err)
+        }
+      }
+      xhr.onerror = () => {
+        setUploadItems((prev) =>
+          prev.map((it) =>
+            it.id == item.id ? { ...it, status: "error", error: "Network error" } : it
+          )
+        )
+        reject(new Error("Network error"))
+      }
+      const formData = new FormData()
+      formData.append("image", item.file)
+      xhr.send(formData)
+    })
+
+  const handleFileUpload = async (files: FileList | null) => {
     if (!files) return
-    const next = Array.from(files).map((file) => URL.createObjectURL(file))
-    const total = next.length
+    const selected = Array.from(files)
+    const total = selected.length
     if (total < 5 || total > 10) {
       setError("Please upload between 5 and 10 images.")
       setImages([])
+      setUploadItems([])
       return
     }
     setError("")
-    setImages(next)
+    const items = selected.map((file, index) => ({
+      id: `${Date.now()}-${index}`,
+      file,
+      preview: URL.createObjectURL(file),
+      progress: 0,
+      status: "uploading",
+    }))
+    setUploadItems(items)
+    setIsUploadingImages(true)
+    try {
+      const uploads = await Promise.all(items.map((item) => uploadSingle(item)))
+      setImages(uploads)
+    } catch (err: any) {
+      setError(err?.message || "Unable to upload images.")
+      const uploaded = uploadItems.filter((item) => item.status == "uploaded" && item.url).map((item) => item.url!)
+      if (uploaded.length > 0) {
+        setImages(uploaded)
+      }
+    } finally {
+      setIsUploadingImages(false)
+    }
+  }
+
+  const retryUpload = async (id: string) => {
+    const item = uploadItems.find((it) => it.id == id)
+    if (!item) return
+    setIsUploadingImages(true)
+    setUploadItems((prev) =>
+      prev.map((it) => (it.id == id ? { ...it, status: "uploading", progress: 0, error: null } : it))
+    )
+    try {
+      const url = await uploadSingle(item)
+      setImages((prev) => {
+        if (prev.includes(url)) return prev
+        return [...prev, url]
+      })
+    } finally {
+      setIsUploadingImages(false)
+    }
   }
 
   const handleSubmit = async (event: React.FormEvent) => {
@@ -317,13 +423,43 @@ export default function HostAddPage() {
                     className="w-full text-sm text-muted-foreground"
                   />
                   <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3">
-                    {images.map((src, index) => (
-                      <div key={`${src}-${index}`} className="h-24 overflow-hidden rounded-md border border-border bg-muted/20">
-                        <img src={src} alt={`Property ${index + 1}`} className="h-full w-full object-cover" />
-                      </div>
-                    ))}
+                    {uploadItems.length > 0 ? (
+                      uploadItems.map((item) => (
+                        <div key={item.id} className="relative h-24 overflow-hidden rounded-md border border-border bg-muted/20">
+                          <img src={item.preview} alt="Upload preview" className="h-full w-full object-cover" />
+                          {item.status === "uploading" && (
+                            <div className="absolute inset-0 flex items-center justify-center bg-black/40 text-xs text-white">
+                              {item.progress}%
+                            </div>
+                          )}
+                          {item.status === "error" && (
+                            <button
+                              type="button"
+                              onClick={() => retryUpload(item.id)}
+                              className="absolute inset-0 flex items-center justify-center bg-black/60 text-xs font-semibold text-white"
+                            >
+                              Retry
+                            </button>
+                          )}
+                          {item.status === "uploaded" && (
+                            <div className="absolute inset-x-0 bottom-0 bg-black/40 px-1 py-0.5 text-[10px] text-white">
+                              Uploaded
+                            </div>
+                          )}
+                        </div>
+                      ))
+                    ) : (
+                      images.map((src, index) => (
+                        <div key={`${src}-${index}`} className="h-24 overflow-hidden rounded-md border border-border bg-muted/20">
+                          <img src={src} alt={`Property ${index + 1}`} className="h-full w-full object-cover" />
+                        </div>
+                      ))
+                    )}
                   </div>
                   <p className="text-xs text-muted-foreground">First image will be used as the cover image.</p>
+                  {isUploadingImages ? (
+                    <p className="text-xs text-amber-600">Uploading images...</p>
+                  ) : null}
                 </div>
 
                 <div className="space-y-2">
