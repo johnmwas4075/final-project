@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
-import { User, Menu, Trash2, ChevronLeft, ChevronRight } from "lucide-react"
+import { User, Menu, Trash2, ChevronLeft, ChevronRight, Check } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { MessageBell } from "@/components/message-bell"
 import { NotificationBell } from "@/components/notification-bell"
@@ -131,7 +131,7 @@ export default function HostPage() {
     progress: number
     status: "uploading" | "uploaded" | "error"
     url?: string
-    deleteUrl?: string
+    publicId?: string
     error?: string
   }
   const [editImages, setEditImages] = useState<string[]>([])
@@ -670,9 +670,9 @@ export default function HostPage() {
   }
 
   const uploadSingle = (item: UploadItem) =>
-    new Promise<{ url: string; deleteUrl?: string }>((resolve, reject) => {
+    new Promise<{ url: string; publicId?: string }>((resolve, reject) => {
       const xhr = new XMLHttpRequest()
-      xhr.open("POST", "/api/uploads/imagebb")
+      xhr.open("POST", "/api/uploads/cloudinary")
       xhr.upload.onprogress = (event) => {
         if (!event.lengthComputable) return
         const progress = Math.round((event.loaded / event.total) * 100)
@@ -689,11 +689,11 @@ export default function HostPage() {
             setUploadItems((prev) =>
               prev.map((it) =>
                 it.id === item.id
-                  ? { ...it, status: "uploaded", progress: 100, url: String(data.url), deleteUrl: data?.deleteUrl ? String(data.deleteUrl) : undefined }
+                  ? { ...it, status: "uploaded", progress: 100, url: String(data.url), publicId: data?.publicId ? String(data.publicId) : undefined }
                   : it
               )
             )
-            resolve({ url: String(data.url), deleteUrl: data?.deleteUrl ? String(data.deleteUrl) : undefined })
+            resolve({ url: String(data.url), publicId: data?.publicId ? String(data.publicId) : undefined })
             return
           }
           const message = data?.error || `Upload failed (${xhr.status})`
@@ -729,12 +729,12 @@ export default function HostPage() {
     const meta = editPhotoMeta.find((item) => item?.url == url)
     setEditImages((prev) => prev.filter((item) => item != url))
     setEditPhotoMeta((prev) => prev.filter((item) => item?.url != url))
-    if (!meta?.deleteUrl) return
+    if (!meta?.publicId) return
     try {
-      await fetch("/api/uploads/imagebb/delete", {
+      await fetch("/api/uploads/cloudinary/delete", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ deleteUrl: meta.deleteUrl }),
+        body: JSON.stringify({ publicId: meta.publicId }),
       })
     } catch {
       // best-effort delete
@@ -748,12 +748,12 @@ export default function HostPage() {
       setEditImages((prev) => prev.filter((url) => url !== item.url))
       setEditPhotoMeta((prev) => prev.filter((meta) => meta?.url !== item.url))
     }
-    if (item?.deleteUrl) {
+    if (item?.publicId) {
       try {
-        await fetch("/api/uploads/imagebb/delete", {
+        await fetch("/api/uploads/cloudinary/delete", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ deleteUrl: item.deleteUrl }),
+          body: JSON.stringify({ publicId: item.publicId }),
         })
       } catch {
         // best-effort delete
@@ -2123,7 +2123,7 @@ export default function HostPage() {
                       setEditImages((prev) => [...prev, ...uploads.map((item) => item.url)])
                       setEditPhotoMeta((prev) => [
                         ...prev,
-                        ...uploads.map((item) => ({ url: item.url, deleteUrl: item.deleteUrl })),
+                        ...uploads.map((item) => ({ url: item.url, publicId: item.publicId })),
                       ])
                     } catch (err: any) {
                       setImageError(err?.message || "Unable to upload images.")
@@ -2140,43 +2140,6 @@ export default function HostPage() {
               <div className="md:col-span-2">
                 <label className="text-sm font-medium text-foreground">Current Images</label>
                 <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3">
-                  {uploadItems.filter((item) => item.status !== "uploaded").map((item) => (
-                    <div key={item.id} className="group relative h-24 overflow-hidden rounded-md border border-border bg-muted/20">
-                      <img src={item.preview} alt="Upload preview" className="h-full w-full object-cover" />
-                      {item.status === "uploaded" && (
-                        <div className="absolute bottom-2 left-2 flex h-5 w-5 items-center justify-center rounded-full bg-emerald-500 text-[10px] font-bold text-white">
-                          ?
-                        </div>
-                      )}
-                      <button
-                        type="button"
-                        aria-label="Remove image"
-                        onClick={() => removeUploadItem(item.id)}
-                        className="absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-full bg-black/60 text-white opacity-100 transition-opacity sm:opacity-0 sm:group-hover:opacity-100"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
-                      {item.status === "uploading" && (
-                        <div className="absolute inset-0 flex items-center justify-center bg-black/40 text-xs text-white">
-                          {item.progress}%
-                        </div>
-                      )}
-                      {item.status === "error" && (
-                        <button
-                          type="button"
-                          onClick={() => retryUpload(item.id)}
-                          className="absolute inset-0 flex items-center justify-center bg-black/60 text-xs font-semibold text-white"
-                        >
-                          Retry
-                        </button>
-                      )}
-                      {item.status === "uploaded" && (
-                        <div className="absolute inset-x-0 bottom-0 bg-black/40 px-1 py-0.5 text-[10px] text-white">
-                          Uploaded
-                        </div>
-                      )}
-                    </div>
-                  ))}
                   {editImages.map((src, index) => (
                     <div
                       key={`${src}-${index}`}

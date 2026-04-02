@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
-import { Menu, Trash2 } from "lucide-react"
+import { Menu, Trash2, Check } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
@@ -69,7 +69,7 @@ export default function HostAddPage() {
     progress: number
     status: "uploading" | "uploaded" | "error"
     url?: string
-    deleteUrl?: string
+    publicId?: string
     error?: string
   }
   const [images, setImages] = useState<string[]>([])
@@ -96,9 +96,9 @@ export default function HostAddPage() {
   }
 
   const uploadSingle = (item: UploadItem) =>
-    new Promise<{ url: string; deleteUrl?: string }>((resolve, reject) => {
+    new Promise<{ url: string; publicId?: string }>((resolve, reject) => {
       const xhr = new XMLHttpRequest()
-      xhr.open("POST", "/api/uploads/imagebb")
+      xhr.open("POST", "/api/uploads/cloudinary")
       xhr.upload.onprogress = (event) => {
         if (!event.lengthComputable) return
         const progress = Math.round((event.loaded / event.total) * 100)
@@ -115,11 +115,11 @@ export default function HostAddPage() {
             setUploadItems((prev) =>
               prev.map((it) =>
                 it.id == item.id
-                  ? { ...it, status: "uploaded", progress: 100, url: String(data.url), deleteUrl: data?.deleteUrl ? String(data.deleteUrl) : undefined }
+                  ? { ...it, status: "uploaded", progress: 100, url: String(data.url), publicId: data?.publicId ? String(data.publicId) : undefined }
                   : it
               )
             )
-            resolve({ url: String(data.url), deleteUrl: data?.deleteUrl ? String(data.deleteUrl) : undefined })
+            resolve({ url: String(data.url), publicId: data?.publicId ? String(data.publicId) : undefined })
             return
           }
           const message = data?.error || `Upload failed (${xhr.status})`
@@ -157,12 +157,28 @@ export default function HostAddPage() {
     if (item?.url) {
       setImages((prev) => prev.filter((url) => url !== item.url))
     }
-    if (item?.deleteUrl) {
+    if (item?.publicId) {
       try {
-        await fetch("/api/uploads/imagebb/delete", {
+        await fetch("/api/uploads/cloudinary/delete", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ deleteUrl: item.deleteUrl }),
+          body: JSON.stringify({ publicId: item.publicId }),
+        })
+      } catch {
+        // best-effort delete
+      }
+    }
+  }
+
+  const removeImage = async (url: string) => {
+    setImages((prev) => prev.filter((item) => item !== url))
+    const meta = uploadItems.find((item) => item.url === url)
+    if (meta?.publicId) {
+      try {
+        await fetch("/api/uploads/cloudinary/delete", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ publicId: meta.publicId }),
         })
       } catch {
         // best-effort delete
@@ -258,7 +274,7 @@ export default function HostAddPage() {
       guests: Number(guests),
       minNights: Number(minNights),
       photos: images,
-      photoMeta: uploadItems.filter((item) => item.status == "uploaded" && item.url).map((item) => ({ url: item.url, deleteUrl: item.deleteUrl })),
+      photoMeta: uploadItems.filter((item) => item.status == "uploaded" && item.url).map((item) => ({ url: item.url, publicId: item.publicId })),
       amenities: amenityOptions.map((amenity) => ({
         ...amenity,
         available: Boolean(amenities[amenity.key]),
@@ -447,51 +463,19 @@ export default function HostAddPage() {
                     className="w-full text-sm text-muted-foreground"
                   />
                   <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3">
-                    {uploadItems.length > 0 ? (
-                      uploadItems.map((item) => (
-                        <div key={item.id} className="group relative h-24 overflow-hidden rounded-md border border-border bg-muted/20">
-                          <img src={item.preview} alt="Upload preview" className="h-full w-full object-cover" />
-                          {item.status === "uploaded" && (
-                            <div className="absolute bottom-2 left-2 flex h-5 w-5 items-center justify-center rounded-full bg-emerald-500 text-[10px] font-bold text-white">
-                              ?
-                            </div>
-                          )}
-                          <button
-                            type="button"
-                            aria-label="Remove image"
-                            onClick={() => removeUploadItem(item.id)}
-                            className="absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-full bg-black/60 text-white opacity-100 transition-opacity sm:opacity-0 sm:group-hover:opacity-100"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </button>
-                          {item.status === "uploading" && (
-                            <div className="absolute inset-0 flex items-center justify-center bg-black/40 text-xs text-white">
-                              {item.progress}%
-                            </div>
-                          )}
-                          {item.status === "error" && (
-                            <button
-                              type="button"
-                              onClick={() => retryUpload(item.id)}
-                              className="absolute inset-0 flex items-center justify-center bg-black/60 text-xs font-semibold text-white"
-                            >
-                              Retry
-                            </button>
-                          )}
-                          {item.status === "uploaded" && (
-                            <div className="absolute inset-x-0 bottom-0 bg-black/40 px-1 py-0.5 text-[10px] text-white">
-                              Uploaded
-                            </div>
-                          )}
-                        </div>
-                      ))
-                    ) : (
-                      images.map((src, index) => (
-                        <div key={`${src}-${index}`} className="h-24 overflow-hidden rounded-md border border-border bg-muted/20">
-                          <img src={src} alt={`Property ${index + 1}`} className="h-full w-full object-cover" />
-                        </div>
-                      ))
-                    )}
+                    {images.map((src, index) => (
+                    <div key={`${src}-${index}`} className="group relative h-24 overflow-hidden rounded-md border border-border bg-muted/20">
+                      <img src={src} alt={`Property ${index + 1}`} className="h-full w-full object-cover" />
+                      <button
+                        type="button"
+                        aria-label="Remove image"
+                        onClick={() => removeImage(src)}
+                        className="absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-full bg-black/60 text-white opacity-100 transition-opacity sm:opacity-0 sm:group-hover:opacity-100"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
+                  ))}
                   </div>
                   <p className="text-xs text-muted-foreground">First image will be used as the cover image.</p>
                   {isUploadingImages ? (
