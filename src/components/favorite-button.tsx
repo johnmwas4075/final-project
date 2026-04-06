@@ -12,9 +12,10 @@ type FavoriteButtonProps = {
   itemType: "property" | "tourist"
   className?: string
   size?: "sm" | "default"
+  iconOnly?: boolean
 }
 
-export function FavoriteButton({ itemId, itemType, className, size = "sm" }: FavoriteButtonProps) {
+export function FavoriteButton({ itemId, itemType, className, size = "sm", iconOnly }: FavoriteButtonProps) {
   const router = useRouter()
   const [userId, setUserId] = useState<string | null>(null)
   const [isFavorite, setIsFavorite] = useState(false)
@@ -35,7 +36,11 @@ export function FavoriteButton({ itemId, itemType, className, size = "sm" }: Fav
       .catch(() => setIsFavorite(false))
   }, [userId, itemId, itemType])
 
-  const toggleFavorite = async () => {
+  const toggleFavorite = async (event?: React.MouseEvent<HTMLButtonElement>) => {
+    if (event) {
+      event.preventDefault()
+      event.stopPropagation()
+    }
     if (!userId) {
       router.push("/login")
       return
@@ -67,13 +72,13 @@ export function FavoriteButton({ itemId, itemType, className, size = "sm" }: Fav
   return (
     <Button
       type="button"
-      variant={isFavorite ? "default" : "outline"}
+      variant={iconOnly ? "ghost" : isFavorite ? "default" : "outline"}
       size={size}
       className={className}
       onClick={toggleFavorite}
     >
-      <Heart className={`h-4 w-4 ${isFavorite ? "fill-white" : ""}`} />
-      <span className="ml-2">{isFavorite ? "Saved" : "Save"}</span>
+      <Heart className={`h-4 w-4 ${isFavorite ? "fill-rose-500 text-rose-500" : "text-rose-500"}`} />
+      {!iconOnly && <span className="ml-2">{isFavorite ? "Saved" : "Save"}</span>}
     </Button>
   )
 }

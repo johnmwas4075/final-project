@@ -1,6 +1,7 @@
 import Image from "next/image"
 import Link from "next/link"
 import { ChevronLeft } from "lucide-react"
+import { FavoriteButton } from "@/components/favorite-button"
 
 function formatLocation(slug: string): string {
   return slug
@@ -103,6 +104,15 @@ export default async function AttractionsPage({
                   fill
                   className="object-cover transition-transform group-hover:scale-105"
                 />
+                <div className="absolute top-2 left-2">
+                  <FavoriteButton
+                    itemId={attraction.id}
+                    itemType="tourist"
+                    size="sm"
+                    iconOnly
+                    className="h-7 w-7 rounded-none border-0 bg-transparent p-0 text-rose-500 shadow-none hover:bg-transparent hover:drop-shadow-[0_0_8px_rgba(244,114,182,0.7)] focus-visible:ring-0"
+                  />
+                </div>
               </div>
               <h3 className="mt-3 font-semibold text-foreground">{attraction.name}</h3>
               <p className="mt-1 text-sm text-muted-foreground line-clamp-3">

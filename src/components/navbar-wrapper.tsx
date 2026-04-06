@@ -11,7 +11,8 @@ export function NavbarWrapper() {
     pathname.startsWith("/host") ||
     pathname.startsWith("/notifications") ||
     pathname.startsWith("/messages") ||
-    pathname.startsWith("/profile")
+    pathname.startsWith("/profile") ||
+    pathname.startsWith("/favorites")
   ) {
     return null
   }

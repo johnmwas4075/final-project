@@ -284,16 +284,16 @@ export default function FavoritesPage() {
             </div>
 
             {showProperties && (
-              <div>
+              <div className="space-y-4">
                 <h3 className="text-lg font-semibold text-foreground">Saved stays</h3>
                 {filteredProperties.length === 0 ? (
                   <div className="mt-4 rounded-xl border border-dashed border-border p-6 text-center">
                     <p className="text-sm text-muted-foreground">No saved stays yet.</p>
                   </div>
                 ) : (
-                  <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
+                  <div className="mt-2 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 place-items-start">
                     {filteredProperties.map((property) => (
-                      <div key={property.id} className="rounded-xl border border-border bg-card p-4">
+                      <div key={property.id} className="w-full max-w-[280px] rounded-xl border border-border bg-card p-4">
                         <Link href={`/property/${property.id}`} className="block">
                           <div className="relative h-40 w-full overflow-hidden rounded-lg">
                             <img src={property.image} alt={property.name} className="h-full w-full object-cover" />
@@ -314,17 +314,21 @@ export default function FavoritesPage() {
               </div>
             )}
 
+            {showProperties && showDestinations && (
+              <div className="border-t border-border pt-4" />
+            )}
+
             {showDestinations && (
-              <div>
+              <div className="space-y-4">
                 <h3 className="text-lg font-semibold text-foreground">Saved destinations</h3>
                 {filteredDestinations.length === 0 ? (
                   <div className="mt-4 rounded-xl border border-dashed border-border p-6 text-center">
                     <p className="text-sm text-muted-foreground">No saved destinations yet.</p>
                   </div>
                 ) : (
-                  <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
+                  <div className="mt-2 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 place-items-start">
                     {filteredDestinations.map((destination) => (
-                      <div key={destination.id} className="rounded-xl border border-border bg-card p-4">
+                      <div key={destination.id} className="w-full max-w-[280px] rounded-xl border border-border bg-card p-4">
                         <Link href={`/tourist/${destination.id}`} className="block">
                           <div className="relative h-40 w-full overflow-hidden rounded-lg">
                             <img src={destination.image} alt={destination.name} className="h-full w-full object-cover" />

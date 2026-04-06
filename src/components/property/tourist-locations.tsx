@@ -2,6 +2,7 @@ import Image from "next/image"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { ChevronRight } from "lucide-react"
+import { FavoriteButton } from "@/components/favorite-button"
 
 interface TouristLocation {
   id: string
@@ -39,6 +40,15 @@ export function TouristLocations({ locations, countySlug, countyName }: TouristL
                 fill
                 className="object-cover transition-transform group-hover:scale-105"
               />
+              <div className="absolute top-2 left-2">
+                <FavoriteButton
+                  itemId={location.id}
+                  itemType="tourist"
+                  size="sm"
+                  iconOnly
+                  className="h-7 w-7 rounded-none border-0 bg-transparent p-0 text-rose-500 shadow-none hover:bg-transparent hover:drop-shadow-[0_0_8px_rgba(244,114,182,0.7)] focus-visible:ring-0"
+                />
+              </div>
             </div>
             <h3 className="mt-2 font-medium text-foreground">{location.name}</h3>
             <p className="text-sm text-muted-foreground line-clamp-2">{location.description}</p>

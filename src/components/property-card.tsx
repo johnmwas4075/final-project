@@ -1,6 +1,7 @@
 import Image from "next/image"
 import Link from "next/link"
 import { Star } from "lucide-react"
+import { FavoriteButton } from "@/components/favorite-button"
 
 interface PropertyCardProps {
   id?: string
@@ -21,6 +22,17 @@ export function PropertyCard({ id, image, name, pricePerNight, rating }: Propert
           fill
           className="object-cover transition-transform duration-300 group-hover:scale-105"
         />
+        {id && (
+          <div className="absolute top-2 left-2">
+            <FavoriteButton
+              itemId={id}
+              itemType="property"
+              size="sm"
+              iconOnly
+              className="h-7 w-7 rounded-none border-0 bg-transparent p-0 text-rose-500 shadow-none hover:bg-transparent hover:drop-shadow-[0_0_8px_rgba(244,114,182,0.7)] focus-visible:ring-0"
+            />
+          </div>
+        )}
         {/* Mobile rating badge - top right */}
         <div className="sm:hidden absolute top-1 right-1 flex items-center gap-0.5 bg-background/90 backdrop-blur-sm rounded-md px-1 py-0.5">
           <Star className="h-2.5 w-2.5 fill-foreground text-foreground" />
