@@ -67,6 +67,15 @@ type PendingBooking = {
   checkIn: string
   checkOut: string
 }
+type RecommendationItem = {
+  id: string
+  name: string
+  description: string
+  image: string
+  rating?: number
+  type: "property" | "tourist"
+}
+
 
 export default function UserPage() {
   const router = useRouter()
@@ -847,11 +856,21 @@ export default function UserPage() {
                             key={item.id}
                             role="button"
                             tabIndex={0}
-                            onClick={() => setSelectedRecommendation(item)}
+                            onClick={() => {
+                              if (item.type === "tourist") {
+                                router.push(`/tourist/${item.id}`)
+                                return
+                              }
+                              setSelectedRecommendation(item)
+                            }}
                             onKeyDown={(event) => {
                               if (event.key === "Enter" || event.key === " ") {
                                 event.preventDefault()
-                                setSelectedRecommendation(item)
+                                if (item.type === "tourist") {
+                                  router.push(`/tourist/${item.id}`)
+                                } else {
+                                  setSelectedRecommendation(item)
+                                }
                               }
                             }}
                             className="flex min-h-[120px] gap-3 rounded-md border border-border bg-background p-4 hover:border-rose-400"
@@ -864,7 +883,13 @@ export default function UserPage() {
                             <div className="min-w-0">
                               <p className="text-sm font-semibold text-foreground truncate">{item.name}</p>
                               <p className="text-xs text-muted-foreground line-clamp-2">{item.description}</p>
-                              <p className="mt-1 text-xs font-medium text-rose-500">{item.rating.toFixed(1)} ★</p>
+                              <p className="mt-1 text-xs font-medium text-rose-500">
+                                {item.type === "tourist"
+                                  ? "Tourist destination"
+                                  : item.rating
+                                    ? `${item.rating.toFixed(1)} ★`
+                                    : "Recommended stay"}
+                              </p>
                             </div>
                           </div>
                         ))}
@@ -1363,14 +1388,20 @@ export default function UserPage() {
                       className="absolute right-3 top-3 flex h-9 w-9 items-center justify-center rounded-full bg-black/60 text-white"
                       aria-label="Close"
                     >
-                      ×
+                      �
                     </button>
                   </div>
                   <div className="space-y-2 p-5">
                     <div className="flex items-center justify-between">
-                      <h3 className="text-lg font-semibold text-foreground">Recommended stay</h3>
+                      <h3 className="text-lg font-semibold text-foreground">
+                        {selectedRecommendation.type === "tourist" ? "Recommended destination" : "Recommended stay"}
+                      </h3>
                       <span className="rounded-full bg-rose-500/10 px-3 py-1 text-xs font-semibold text-rose-600">
-                        {selectedRecommendation.rating.toFixed(1)} ★
+                        {selectedRecommendation.type === "tourist"
+                          ? "Tourist"
+                          : selectedRecommendation.rating
+                            ? `${selectedRecommendation.rating.toFixed(1)} ★`
+                            : "Stay"}
                       </span>
                     </div>
                     <p className="text-base font-semibold text-foreground">{selectedRecommendation.name}</p>
@@ -1381,9 +1412,15 @@ export default function UserPage() {
                       </Button>
                       <Button
                         className="bg-rose-500 text-white hover:bg-rose-600"
-                        onClick={() => router.push(`/property/${selectedRecommendation.id}`)}
+                        onClick={() =>
+                          router.push(
+                            selectedRecommendation.type === "tourist"
+                              ? `/tourist/${selectedRecommendation.id}`
+                              : `/property/${selectedRecommendation.id}`
+                          )
+                        }
                       >
-                        View property
+                        {selectedRecommendation.type === "tourist" ? "View destination" : "View property"}
                       </Button>
                     </div>
                   </div>
@@ -1849,7 +1886,7 @@ export default function UserPage() {
                           <tr>
                             <td className="py-1 font-medium text-foreground">Card</td>
                             <td className="py-1 text-right">
-                              {cardType.toUpperCase()} ���� {cardDetails.number.slice(-4) || "0000"}
+                              {cardType.toUpperCase()} ???? {cardDetails.number.slice(-4) || "0000"}
                             </td>
                           </tr>
                         )}

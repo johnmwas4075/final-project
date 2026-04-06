@@ -21,6 +21,7 @@ export function Navbar() {
   const pathname = usePathname()
   const searchParams = useSearchParams()
   const isMain = pathname === "/"
+  const isProperty = pathname.startsWith("/property/")
 
   const [selectedLocation, setSelectedLocation] = useState<string>("")
   const [bedrooms, setBedrooms] = useState<string>("")
@@ -233,6 +234,17 @@ export function Navbar() {
         <Link href="/" className="flex items-center">
           <span className="text-xl font-bold text-rose-500 font-brand">Dwellify</span>
         </Link>
+
+        {isProperty && (
+          <nav className="hidden md:flex items-center gap-8 text-lg font-semibold text-muted-foreground">
+            <a href="#photos" className="hover:text-foreground">Photos</a>
+            <a href="#amenities" className="hover:text-foreground">Amenities</a>
+            <a href="#reviews" className="hover:text-foreground">Ratings &amp; reviews</a>
+            <a href="#book" className="rounded-md bg-rose-500 px-4 py-1.5 text-white hover:bg-rose-600">
+              Book
+            </a>
+          </nav>
+        )}
 
         {isMain && (
           <div className="hidden md:flex flex-col items-center" ref={filtersRef}>

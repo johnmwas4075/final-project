@@ -115,7 +115,7 @@ export default async function PropertyPage({
     <main className="min-h-screen bg-background">
       <RecommendationSkipMarker />
       {/* Photo Gallery - Full Width */}
-      <div className="mx-auto max-w-7xl px-4 pt-6 sm:px-6 lg:px-8">
+      <div id="photos" className="mx-auto max-w-7xl px-4 pt-6 sm:px-6 lg:px-8">
         <PhotoGallery photos={property.photos} propertyName={property.name} />
       </div>
 
@@ -136,7 +136,9 @@ export default async function PropertyPage({
 
             <Description description={property.description} />
 
-            <Amenities amenities={property.amenities} />
+            <div id="amenities">
+              <Amenities amenities={property.amenities} />
+            </div>
 
             <HostDetails
               name={property.host.name}
@@ -153,7 +155,7 @@ export default async function PropertyPage({
           </div>
 
           {/* Right Column - Booking Widget */}
-          <div className="lg:col-span-1">
+          <div id="book" className="lg:col-span-1">
             <div className="lg:pt-6">
               <BookingWidget
                 propertyId={property.id}
@@ -165,7 +167,7 @@ export default async function PropertyPage({
               />
             </div>
 
-            <div className="mt-8 space-y-6">
+            <div id="reviews" className="mt-8 space-y-6">
               <Ratings
                 overallRating={property.rating}
                 reviewCount={property.reviewCount}

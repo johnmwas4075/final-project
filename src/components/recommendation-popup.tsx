@@ -14,7 +14,8 @@ interface RecommendationItem {
   name: string
   description: string
   image: string
-  rating: number
+  rating?: number
+  type: "property" | "tourist"
 }
 
 export function RecommendationPopup() {
@@ -60,10 +61,12 @@ export function RecommendationPopup() {
 
   if (!isOpen || !pick) return null
 
+  const targetHref = pick.type === "tourist" ? `/tourist/${pick.id}` : `/property/${pick.id}`
+
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 p-4 sm:items-center">
       <div className="w-full max-w-lg overflow-hidden rounded-2xl bg-background shadow-xl">
-        <div className="relative cursor-pointer" role="button" onClick={() => router.push(`/property/${pick.id}`)}>
+        <div className="relative cursor-pointer" role="button" onClick={() => router.push(targetHref)}>
           <img src={pick.image} alt={pick.name} className="h-48 w-full object-cover" />
           <button
             onClick={(event) => { event.stopPropagation(); setIsOpen(false) }}
@@ -75,9 +78,11 @@ export function RecommendationPopup() {
         </div>
         <div className="space-y-2 p-5">
           <div className="flex items-center justify-between">
-            <h3 className="text-lg font-semibold text-foreground">Recommended for you</h3>
+            <h3 className="text-lg font-semibold text-foreground">
+              {pick.type === "tourist" ? "Recommended destination" : "Recommended stay"}
+            </h3>
             <span className="rounded-full bg-rose-500/10 px-3 py-1 text-xs font-semibold text-rose-600">
-              {pick.rating.toFixed(1)} ?
+              {pick.type === "tourist" ? "Tourist" : pick.rating ? `${pick.rating.toFixed(1)} ★` : "Stay"}
             </span>
           </div>
           <p className="text-base font-semibold text-foreground">{pick.name}</p>
@@ -88,9 +93,9 @@ export function RecommendationPopup() {
             </Button>
             <Button
               className="bg-rose-500 text-white hover:bg-rose-600"
-              onClick={() => router.push(`/property/${pick.id}`)}
+              onClick={() => router.push(targetHref)}
             >
-              View property
+              {pick.type === "tourist" ? "View destination" : "View property"}
             </Button>
           </div>
         </div>
