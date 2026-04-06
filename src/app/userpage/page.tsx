@@ -651,6 +651,15 @@ export default function UserPage() {
                     <Button
                       variant="ghost"
                       className="w-full justify-start rounded-md px-3 py-2 text-sm"
+                      onClick={() => router.push("/favorites")}
+                    >
+                      Favourites
+                    </Button>
+                  </SheetClose>
+                  <SheetClose asChild>
+                    <Button
+                      variant="ghost"
+                      className="w-full justify-start rounded-md px-3 py-2 text-sm"
                       onClick={() => setActiveSection("support")}
                     >
                       Help and support
@@ -778,6 +787,17 @@ export default function UserPage() {
                 }`}
               >
                 Payments and invoices
+              </button>
+              <div className="my-2 border-b border-white/30" />
+              <button 
+                onClick={() => router.push("/favorites")}
+                className={`w-full rounded-md px-3 py-2 text-left transition-colors ${
+                  activeSection === "favorites" 
+                    ? "bg-white text-rose-600" 
+                    : "text-white/90 hover:bg-white/15 hover:text-white"
+                }`}
+              >
+                Favourites
               </button>
               <div className="my-2 border-b border-white/30" />
               <button 

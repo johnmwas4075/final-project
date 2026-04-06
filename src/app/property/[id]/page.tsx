@@ -1,8 +1,9 @@
-import { PhotoGallery } from "@/components/property/photo-gallery"
+﻿import { PhotoGallery } from "@/components/property/photo-gallery"
 import { PropertyDetails } from "@/components/property/property-details"
 import { Amenities } from "@/components/property/amenities"
 import { Description } from "@/components/property/description"
 import { HostDetails } from "@/components/property/host-details"
+import { FavoriteButton } from "@/components/favorite-button"
 import { BookingWidget } from "@/components/property/booking-widget"
 import { Ratings } from "@/components/property/ratings"
 import { Reviews } from "@/components/property/reviews"
@@ -190,3 +191,4 @@ export default async function PropertyPage({
     </main>
   )
 }
+

@@ -27,7 +27,11 @@ export function TouristLocations({ locations, countySlug, countyName }: TouristL
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
         {displayedLocations.map((location) => (
-          <div key={location.id} className="group">
+          <Link
+            key={location.id}
+            href={`/tourist/${location.id}`}
+            className="group rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-500"
+          >
             <div className="relative aspect-[4/3] rounded-lg overflow-hidden">
               <Image
                 src={location.image}
@@ -38,7 +42,7 @@ export function TouristLocations({ locations, countySlug, countyName }: TouristL
             </div>
             <h3 className="mt-2 font-medium text-foreground">{location.name}</h3>
             <p className="text-sm text-muted-foreground line-clamp-2">{location.description}</p>
-          </div>
+          </Link>
         ))}
       </div>
 
@@ -51,4 +55,3 @@ export function TouristLocations({ locations, countySlug, countyName }: TouristL
     </div>
   )
 }
-
