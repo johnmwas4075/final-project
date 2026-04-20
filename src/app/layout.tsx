@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { Geist, Geist_Mono, Kalam } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
+import { SpeedInsights } from '@vercel/speed-insights/next'
 import './globals.css'
 import { NavbarWrapper } from '@/components/navbar-wrapper'
 import { ChatbotWrapper } from "@/components/chatbot-wrapper"
@@ -46,6 +47,7 @@ export default function RootLayout({
         {children}
         <ChatbotWrapper />
         <Analytics />
+        <SpeedInsights />
       </body>
     </html>
   )
